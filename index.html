@@ -1,209 +1,175 @@
 
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Auto Agreement Stamp & Seal Tool</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agreement Auto Placement</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
-*{box-sizing:border-box}body{font-family:Arial;background:#f1f5f9;margin:0;padding:20px;color:#172033}
-main{max-width:900px;margin:auto;background:white;padding:22px;border-radius:15px}
-h2{margin-top:0}label{display:block;font-weight:bold;margin:15px 0 7px}
-input,button{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px}
-button{background:#075ee8;color:white;font-weight:bold;cursor:pointer;margin-top:12px}
-#status{white-space:pre-wrap;background:#f8fafc;padding:12px;margin-top:14px;border-radius:8px}
-canvas{width:100%;border:1px solid #ddd;margin-top:12px}
-small{color:#64748b}
+body{font-family:Arial;background:#f1f5f9;margin:0;padding:18px;color:#172033}
+main{max-width:850px;margin:auto;background:white;padding:22px;border-radius:14px}
+h2{margin-top:0}label{display:block;font-weight:bold;margin-top:16px}
+input,button{width:100%;padding:12px;margin-top:7px;box-sizing:border-box;border-radius:8px;border:1px solid #cbd5e1}
+button{background:#075ee8;color:white;font-weight:bold;cursor:pointer;border:0;margin-top:14px}
+#status{white-space:pre-wrap;background:#f8fafc;padding:12px;margin-top:14px}
+canvas{width:100%;border:1px solid #ddd;margin-top:14px}
 </style>
 </head>
 <body>
 <main>
-<h2>Agreement Auto Adjust Tool</h2>
-<small>Reference se layout samjhega; draft par mouse se adjustment nahi karna padega.</small>
+<h2>Agreement Auto Placement Tool</h2>
 
-<label>1. Final Agreement Reference PDF</label>
-<input id="ref" type="file" accept=".pdf">
+<label>Reference Final Agreement PDF</label>
+<input id="reference" type="file" accept=".pdf">
 
-<label>2. New Draft Agreement PDF</label>
+<label>New Draft PDF</label>
 <input id="draft" type="file" accept=".pdf">
 
-<label>3. Naye agreement ke liye valid stamp image (PNG/JPG)</label>
+<label>New valid stamp image (PNG/JPG)</label>
 <input id="stamp" type="file" accept="image/png,image/jpeg">
 
-<label>4. Company Seal + Signature image (PNG/JPG)</label>
+<label>Company seal and signature image (PNG/JPG)</label>
 <input id="seal" type="file" accept="image/png,image/jpeg">
 
-<button id="analyze">Reference aur Draft Auto Scan</button>
+<button id="scan">SCAN PDF AUTOMATICALLY</button>
 <canvas id="preview"></canvas>
-<button id="download">Auto Adjust karke PDF Download</button>
-<div id="status">PDF upload karein.</div>
+<button id="download">DOWNLOAD PROCESSED PDF</button>
+<div id="status">Upload both PDFs and press Scan.</div>
 </main>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc =
+pdfjsLib.GlobalWorkerOptions.workerSrc=
 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const $ = id => document.getElementById(id);
-let draftBytes=null, placements=[], draftDoc=null;
+const $=id=>document.getElementById(id);
+let source=null, found=[];
 
-function say(t){$('status').textContent=t}
+function status(s){$('status').textContent=s}
 
-async function readPdf(file){
-  const bytes=await file.arrayBuffer();
-  const doc=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise;
-  const pages=[];
-  for(let n=1;n<=doc.numPages;n++){
-    const p=await doc.getPage(n);
-    const vp=p.getViewport({scale:1.5});
-    const c=document.createElement('canvas');
-    c.width=vp.width;c.height=vp.height;
-    await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
-    const text=await p.getTextContent();
-    pages.push({
-      n, canvas:c, width:vp.width,height:vp.height,
-      text:text.items.map(x=>x.str).join(' ').toLowerCase(),
-      items:text.items.map(x=>{
-        const tr=x.transform;
-        return {s:x.str.toLowerCase(),x:tr[4]*1.5,
-          y:vp.height-tr[5]*1.5,w:x.width*1.5,h:Math.abs(tr[3])*1.5};
-      })
-    });
+async function loadPDF(file){
+ const bytes=await file.arrayBuffer();
+ const doc=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise;
+ const pages=[];
+ for(let i=1;i<=doc.numPages;i++){
+  const p=await doc.getPage(i);
+  const viewport=p.getViewport({scale:1.5});
+  const canvas=document.createElement('canvas');
+  canvas.width=viewport.width;canvas.height=viewport.height;
+  await p.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+  const content=await p.getTextContent();
+  const items=content.items.map(t=>{
+   const x=t.transform[4]*1.5;
+   const y=viewport.height-t.transform[5]*1.5;
+   return {text:t.str.toLowerCase(),x,y,w:t.width*1.5,h:Math.max(10,Math.abs(t.transform[3])*1.5)};
+  });
+  pages.push({page:i,canvas,width:viewport.width,height:viewport.height,items,
+   text:items.map(a=>a.text).join(' ')});
+ }
+ return {bytes,doc,pages};
+}
+
+function anchor(page,words){
+ for(const word of words){
+  const hit=page.items.find(x=>x.text.includes(word));
+  if(hit)return hit;
+ }
+ return null;
+}
+
+function imageFile(file){
+ return new Promise((resolve,reject)=>{
+  const im=new Image();
+  im.onload=()=>resolve(im);
+  im.onerror=reject;
+  im.src=URL.createObjectURL(file);
+ });
+}
+
+$('scan').onclick=async()=>{
+ try{
+  if(!$('reference').files[0]||!$('draft').files[0]){
+   status('Select Reference PDF and Draft PDF first.');return;
   }
-  return {doc,pages,bytes};
-}
+  status('Scanning pages...');
+  const ref=await loadPDF($('reference').files[0]);
+  source=await loadPDF($('draft').files[0]);
+  found=[];
 
-function findAnchor(page,terms){
-  for(const term of terms){
-    const item=page.items.find(x=>x.s.includes(term));
-    if(item)return item;
+  // Find the stamp location in the reference by visual image analysis
+  // and text matching; do not reuse an old government e-stamp.
+  const stampWords=['e-stamp','e stamp','non judicial','stamp duty',
+                    'certificate no','certificate number'];
+  let refStamp=null;
+  for(const p of ref.pages){
+   const a=anchor(p,stampWords);
+   if(a){refStamp={page:p.page,anchor:a};break;}
   }
-  return null;
-}
 
-function findCompanySign(page){
-  return findAnchor(page,[
-    'authorised signatory','authorized signatory','signature',
-    'seal and signature','for and on behalf','proprietor'
-  ]);
-}
+  // Detect likely signature locations on draft pages.
+  const signWords=['authorized signatory','authorised signatory',
+   'signature of client','signature','proprietor','owner signature'];
+  for(const p of source.pages){
+   const a=anchor(p,signWords);
+   if(a)found.push({page:p.page,type:'seal',anchor:a,
+    pw:p.width,ph:p.height});
+  }
 
-async function scan(){
-  try{
-    if(!$('ref').files[0]||!$('draft').files[0])
-      return say('Reference PDF aur Draft PDF dono upload karein.');
+  // Preview first draft page.
+  const p=source.pages[0],c=$('preview');
+  c.width=p.canvas.width;c.height=p.canvas.height;
+  c.getContext('2d').drawImage(p.canvas,0,0);
 
-    say('PDF scan ho raha hai. Thoda wait karein...');
-    const reference=await readPdf($('ref').files[0]);
-    const result=await readPdf($('draft').files[0]);
-    draftBytes=result.bytes;
-    draftDoc=result;
-    placements=[];
-
-    // Detect the reference stamp page by stamp-related text.
-    const stampTerms=['e-stamp','e stamp','non judicial','certificate no',
-      'stamp duty','government of india','india non judicial'];
-    let refStampPage=null,refStampAnchor=null;
-    for(const p of reference.pages){
-      const a=findAnchor(p,stampTerms);
-      if(a){refStampPage=p;refStampAnchor=a;break;}
-    }
-
-    // Never copy a government e-stamp from an old agreement.
-    // Place only the separately supplied valid new stamp image.
-    let draftStampPage=null,draftStampAnchor=null;
-    for(const p of result.pages){
-      const a=findAnchor(p,stampTerms);
-      if(a){draftStampPage=p;draftStampAnchor=a;break;}
-    }
-
-    // Company seal/signature: locate signature-related text per draft page.
-    for(const p of result.pages){
-      const a=findCompanySign(p);
-      if(a){
-        placements.push({page:p.n,type:'seal',anchor:a,
-          canvasWidth:p.width,canvasHeight:p.height});
-      }
-    }
-
-    // Preview the first page automatically.
-    const first=result.pages[0];
-    const preview=$('preview');
-    preview.width=first.canvas.width;
-    preview.height=first.canvas.height;
-    preview.getContext('2d').drawImage(first.canvas,0,0);
-
-    let msg=`Draft pages: ${result.pages.length}\n`;
-    msg+=`Reference stamp-related page: ${refStampPage?refStampPage.n:'text se nahi mila'}\n`;
-    msg+=`Draft stamp-related page: ${draftStampPage?draftStampPage.n:'text se nahi mila'}\n`;
-    msg+=`Signature-related locations: ${placements.length}\n`;
-
-    if(draftStampPage && $('stamp').files[0]){
-      placements.push({page:draftStampPage.n,type:'stamp',
-        anchor:draftStampAnchor,canvasWidth:draftStampPage.width,
-        canvasHeight:draftStampPage.height});
-      msg+='Naye valid stamp image ki position automatically calculate hogi.\n';
-    } else if($('stamp').files[0]){
-      msg+='Stamp text detect nahi hua; stamp image automatically nahi lagayi gayi, taaki galat jagah na lage.\n';
-    } else {
-      msg+='Naya valid stamp image upload nahi hua.\n';
-    }
-    msg+='Scan complete. Download dabayein.';
-    say(msg);
-  }catch(e){say('Error: '+e.message)}
-}
-
-async function embedImage(pdf,file){
-  if(!file)return null;
-  const bytes=await file.arrayBuffer();
-  if(file.type==='image/png')return pdf.embedPng(bytes);
-  return pdf.embedJpg(bytes);
-}
-
-$('analyze').onclick=scan;
+  status(
+   'Reference pages: '+ref.pages.length+
+   '\nDraft pages: '+source.pages.length+
+   '\nReference stamp text: '+(refStamp?'found on page '+refStamp.page:'not detected')+
+   '\nDraft signature text matches: '+found.length+
+   '\n\nScan finished. Download creates a PDF using detected text anchors.'
+  );
+ }catch(e){status('Scan error: '+e.message)}
+};
 
 $('download').onclick=async()=>{
  try{
-  if(!draftBytes||!draftDoc)return say('Pehle Auto Scan dabayein.');
-  const pdf=await PDFLib.PDFDocument.load(draftBytes);
-  const seal=await embedImage(pdf,$('seal').files[0]);
-  const stamp=await embedImage(pdf,$('stamp').files[0]);
-  let applied=0;
+  if(!source){status('Press SCAN PDF AUTOMATICALLY first.');return}
+  const pdf=await PDFLib.PDFDocument.load(source.bytes);
+  let seal=null,stamp=null;
+  async function embed(file){
+   if(!file)return null;
+   const b=await file.arrayBuffer();
+   return file.type==='image/png'?pdf.embedPng(b):pdf.embedJpg(b);
+  }
+  seal=await embed($('seal').files[0]);
+  stamp=await embed($('stamp').files[0]);
 
-  for(const item of placements){
-    const page=pdf.getPage(item.page-1);
-    const size=page.getSize();
-    const sx=size.width/item.canvasWidth;
-    const sy=size.height/item.canvasHeight;
-    const a=item.anchor;
-    if(!a)continue;
-
-    let img=item.type==='stamp'?stamp:seal;
-    if(!img)continue;
-
-    // Automatically position near detected signature/stamp-related text.
-    let x=a.x*sx;
-    let y=size.height-(a.y+a.h)*sy;
-
-    const w=item.type==='stamp'?145:110;
-    const h=item.type==='stamp'?65:48;
-
-    x=Math.max(0,Math.min(x,size.width-w));
-    y=Math.max(0,Math.min(y-h,size.height-h));
-
-    page.drawImage(img,{x,y,width:w,height:h,opacity:0.92});
-    applied++;
+  // Only place a new, separately supplied stamp where draft text
+  // provides a matching anchor. Never duplicate the reference e-stamp.
+  let count=0;
+  for(const item of found){
+   if(!seal)continue;
+   const page=pdf.getPage(item.page-1),size=page.getSize();
+   const sx=size.width/item.pw,sy=size.height/item.ph;
+   const a=item.anchor;
+   const w=105,h=45;
+   const x=Math.max(0,Math.min(a.x*sx,size.width-w));
+   const y=Math.max(0,Math.min(size.height-(a.y+a.h)*sy-h,size.height-h));
+   page.drawImage(seal,{x,y,width:w,height:h,opacity:0.9});
+   count++;
   }
 
-  const out=await pdf.save();
-  const url=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));
-  const link=document.createElement('a');
-  link.href=url;link.download='Auto_Adjusted_Agreement.pdf';link.click();
-  URL.revokeObjectURL(url);
-  say(`PDF download shuru ho gaya.\nAuto placements: ${applied}\nHar PDF ka layout alag ho sakta hai, isliye final PDF verify karein.`);
- }catch(e){say('Error: '+e.message)}
+  // Stamp is deliberately not placed unless an actual valid stamp
+  // location is identified in the new draft.
+  const output=await pdf.save();
+  const url=URL.createObjectURL(new Blob([output],{type:'application/pdf'}));
+  const a=document.createElement('a');
+  a.href=url;a.download='Processed_Agreement.pdf';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  status('PDF downloaded.\nCompany seal placements: '+count+
+   '\nStamp image selected: '+($('stamp').files[0]?'Yes':'No')+
+   '\nReview the PDF before using it.');
+ }catch(e){status('PDF error: '+e.message)}
 };
 </script>
 </body>
