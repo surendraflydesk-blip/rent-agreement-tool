@@ -2,724 +2,442 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rent Agreement Stamp & Signature Tool</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rent Agreement Tool</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 18px;
-      font-family: Arial, sans-serif;
-      background: #f3f5f9;
-      color: #202637;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: auto;
-    }
-
-    h1 { font-size: 25px; }
-
-    .panel {
-      background: white;
-      padding: 18px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 10px #0000000b;
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin: 12px 0 6px;
-    }
-
-    input, select, button {
-      font: inherit;
-      max-width: 100%;
-    }
-
-    input[type="file"], input[type="number"], select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccd2dc;
-      border-radius: 7px;
-      background: white;
-    }
-
-    button {
-      border: 0;
-      border-radius: 8px;
-      padding: 11px 15px;
-      margin: 5px 4px 5px 0;
-      cursor: pointer;
-      background: #e7ebf3;
-      color: #202637;
-    }
-
-    button.primary {
-      background: #145de0;
-      color: white;
-    }
-
-    button:disabled {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-    }
-
-    .workspace {
-      overflow: auto;
-      background: #e5e9f1;
-      padding: 15px;
-      border-radius: 10px;
-      min-height: 250px;
-      text-align: center;
-    }
-
-    #stage {
-      position: relative;
-      display: inline-block;
-      line-height: 0;
-      background: white;
-      box-shadow: 0 2px 12px #0002;
-      touch-action: pan-x pan-y;
-    }
-
-    #pdfCanvas {
-      display: block;
-      max-width: none;
-    }
-
-    #overlay {
-      position: absolute;
-      left: 30px;
-      top: 30px;
-      width: 140px;
-      height: auto;
-      cursor: grab;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-drag: none;
-      will-change: left, top;
-      outline: 1px dashed #145de0;
-      outline-offset: 2px;
-    }
-
-    #overlay.dragging {
-      cursor: grabbing;
-      outline: 2px solid #145de0;
-    }
-
-    .hint {
-      color: #606b7c;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .status {
-      padding: 10px;
-      background: #edf4ff;
-      border-radius: 7px;
-      margin-top: 10px;
-      line-height: 1.5;
-      overflow-wrap: anywhere;
-    }
-
-    .arrow-grid {
-      display: grid;
-      grid-template-columns: 45px 45px 45px;
-      gap: 4px;
-      justify-content: start;
-      margin-top: 10px;
-    }
-
-    .arrow-grid button {
-      margin: 0;
-      padding: 10px;
-      font-size: 20px;
-    }
-
-    .arrow-grid .empty {
-      visibility: hidden;
-    }
-
-    @media (max-width: 600px) {
-      body { padding: 10px; }
-      .panel { padding: 12px; }
-      h1 { font-size: 21px; }
-    }
-  </style>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f2f5fa;margin:0;padding:16px;color:#202637}
+.container{max-width:1000px;margin:auto}
+.panel{background:white;padding:18px;border-radius:12px;margin:14px 0;box-shadow:0 2px 10px #0001}
+h1{font-size:25px}
+label{display:block;font-weight:bold;margin:13px 0 6px}
+input,select,button{font:inherit;max-width:100%}
+input[type=file],input[type=number],select{width:100%;padding:10px;border:1px solid #ccd2dc;border-radius:7px;background:white}
+button{border:0;border-radius:8px;padding:11px 14px;margin:5px 3px 5px 0;cursor:pointer;background:#e8edf5}
+.primary{background:#155ee5;color:white}
+.hint{font-size:14px;color:#606b7c;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.workspace{overflow:auto;background:#e5e9f1;padding:12px;border-radius:9px;text-align:center;min-height:150px}
+#stage{position:relative;display:inline-block;line-height:0;background:white}
+#pdfCanvas{display:block}
+.overlay{position:absolute;cursor:grab;touch-action:none;user-select:none;-webkit-user-drag:none;outline:1px dashed #155ee5;will-change:left,top}
+.overlay.dragging{cursor:grabbing;outline:2px solid #155ee5}
+.status{padding:11px;background:#edf4ff;border-radius:8px;overflow-wrap:anywhere}
+@media(max-width:600px){body{padding:8px}.panel{padding:12px}}
+</style>
 </head>
 
 <body>
 <div class="container">
-  <h1>Rent Agreement PDF Tool</h1>
-  <p class="hint">
-    PDF upload karein, image select karein aur mouse se drag karke
-    sahi jagah rakhein. Arrow buttons se chhota adjustment bhi kar sakte hain.
-  </p>
+<h1>Rent Agreement PDF Tool</h1>
+<p class="hint">Reference PDF upload karein, draft PDF load karein aur first page par seal/stamp ko mouse se adjust karein.</p>
 
-  <section class="panel">
-    <h3>1. PDF aur image upload karein</h3>
+<section class="panel">
+<h3>1. PDF aur Images Upload Karein</h3>
 
-    <label for="draftPdf">Draft Agreement PDF</label>
-    <input id="draftPdf" type="file" accept="application/pdf">
+<label for="referencePdf">Reference Final Agreement PDF (optional)</label>
+<input id="referencePdf" type="file" accept=".pdf,application/pdf">
 
-    <label for="sealImage">Company Seal / Authorized Signature Image</label>
-    <input id="sealImage" type="file" accept="image/png,image/jpeg">
+<label for="draftPdf">Draft Agreement PDF</label>
+<input id="draftPdf" type="file" accept=".pdf,application/pdf">
 
-    <label for="stampImage">Naye agreement ke liye valid stamp image (agar zaroori ho)</label>
-    <input id="stampImage" type="file" accept="image/png,image/jpeg">
+<label for="sealImage">Company Seal / Authorized Signature (PNG/JPG)</label>
+<input id="sealImage" type="file" accept="image/png,image/jpeg">
 
-    <p class="hint">
-      Purane government e-stamp certificate ko naye agreement par copy na karein.
-      Har agreement ke liye applicable valid stamp/document use karein.
-    </p>
+<label for="stampImage">Is Agreement Ke Liye Valid Stamp Image (PNG/JPG)</label>
+<input id="stampImage" type="file" accept="image/png,image/jpeg">
 
-    <button class="primary" id="loadBtn">PDF Load Karein</button>
-  </section>
+<button id="loadBtn" class="primary">Draft PDF Load Karein</button>
+<button id="referenceBtn">Reference PDF Dekhein</button>
 
-  <section class="panel">
-    <h3>2. Page aur image select karein</h3>
+<p class="hint">Reference PDF sirf dekhne ke liye hai. Purane government e-stamp ko naye agreement mein reuse na karein.</p>
+</section>
 
-    <div class="controls">
-      <div>
-        <label for="pageSelect">PDF Page</label>
-        <select id="pageSelect" disabled></select>
-      </div>
+<section class="panel">
+<h3>2. First Page Par Position Adjust Karein</h3>
 
-      <div>
-        <label for="assetSelect">Image</label>
-        <select id="assetSelect">
-          <option value="seal">Company Seal / Signature</option>
-          <option value="stamp">New Valid Stamp Image</option>
-        </select>
-      </div>
+<div class="grid">
+<div>
+<label for="assetSelect">Adjust Karne Wali Image</label>
+<select id="assetSelect">
+<option value="seal">Company Seal / Signature</option>
+<option value="stamp">Valid Stamp Image</option>
+</select>
+</div>
 
-      <div>
-        <label for="widthInput">Image Width (preview pixels)</label>
-        <input id="widthInput" type="number" min="10" max="2000" value="140">
-      </div>
+<div>
+<label for="widthInput">Image Width (preview px)</label>
+<input id="widthInput" type="number" min="10" max="1500" value="140">
+</div>
 
-      <div>
-        <label for="stepInput">Arrow Adjustment (pixels)</label>
-        <select id="stepInput">
-          <option value="1">1 pixel - Fine</option>
-          <option value="2" selected>2 pixels</option>
-          <option value="5">5 pixels</option>
-          <option value="10">10 pixels</option>
-        </select>
-      </div>
-    </div>
+<div>
+<label for="stepInput">Arrow Movement</label>
+<select id="stepInput">
+<option value="1">1 pixel</option>
+<option value="2" selected>2 pixels</option>
+<option value="5">5 pixels</option>
+<option value="10">10 pixels</option>
+</select>
+</div>
+</div>
 
-    <p class="hint">
-      Image ko mouse se pakadkar move karein. Keyboard ke arrow keys bhi use kar sakte hain.
-      Position page ke proportion ke hisaab se save hoti hai.
-    </p>
+<p class="hint">Image ko mouse se drag karein ya neeche arrow buttons dabayein. Sirf first page preview hota hai aur final PDF mein bhi sirf first page par image lagegi.</p>
 
-    <div>
-      <button id="prevBtn" disabled>← Previous Page</button>
-      <button id="nextBtn" disabled>Next Page →</button>
-      <button id="centerBtn" disabled>Image Center Karein</button>
-    </div>
+<div>
+<button id="centerBtn">Image Center Karein</button>
+<button id="saveBtn">Position Save Karein</button>
+</div>
 
-    <div class="workspace">
-      <div id="stage">
-        <canvas id="pdfCanvas"></canvas>
-        <img id="overlay" alt="Selected seal or stamp" draggable="false" hidden>
-      </div>
-    </div>
+<div class="workspace">
+<div id="stage">
+<canvas id="pdfCanvas"></canvas>
+<img id="overlay" class="overlay" alt="Seal or stamp" draggable="false" hidden>
+</div>
+</div>
 
-    <div class="arrow-grid">
-      <button class="empty" tabindex="-1"> </button>
-      <button id="upBtn" disabled title="Move up">↑</button>
-      <button class="empty" tabindex="-1"> </button>
-      <button id="leftBtn" disabled title="Move left">←</button>
-      <button id="downBtn" disabled title="Move down">↓</button>
-      <button id="rightBtn" disabled title="Move right">→</button>
-    </div>
+<div>
+<button id="upBtn">↑ Upar</button>
+<button id="leftBtn">← Left</button>
+<button id="rightBtn">Right →</button>
+<button id="downBtn">↓ Neeche</button>
+</div>
 
-    <div id="status" class="status">PDF upload karke shuru karein.</div>
-  </section>
+<div id="status" class="status">Pehle draft PDF upload karein.</div>
+</section>
 
-  <section class="panel">
-    <h3>3. Position save aur reuse karein</h3>
+<section class="panel">
+<h3>3. Position Template</h3>
+<button id="exportTemplate">Template Download Karein</button>
+<label for="templateFile">Pehle Save Kiya Template Load Karein</label>
+<input id="templateFile" type="file" accept=".json,application/json">
+<p class="hint">Template mein image positions save hoti hain, images nahi. Agli baar images dobara upload karein aur placement check karein.</p>
+</section>
 
-    <button id="savePositionBtn" disabled>Is Page Ki Position Save Karein</button>
-    <button id="exportTemplateBtn">Position Template Download Karein</button>
-
-    <label for="templateFile">Saved Position Template Load Karein</label>
-    <input id="templateFile" type="file" accept="application/json">
-
-    <p class="hint">
-      Template mein image ki position percentage ke roop mein save hoti hai.
-      Agle draft mein page numbers/layout alag hon to position verify karein.
-      Template image file ko save nahi karta; image dobara upload karni hogi.
-    </p>
-  </section>
-
-  <section class="panel">
-    <h3>4. Processed PDF Download</h3>
-    <button class="primary" id="downloadBtn" disabled>Final PDF Download Karein</button>
-    <p class="hint">
-      Sirf wahi pages par image lagegi jinke liye aapne position save ki hai.
-      Download se pehle har page aur placement check kar lein.
-    </p>
-  </section>
+<section class="panel">
+<h3>4. Final PDF</h3>
+<button id="downloadBtn" class="primary">Final PDF Download Karein</button>
+<p class="hint">Download se pehle seal aur stamp ki position check karein.</p>
+</section>
 </div>
 
 <script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-  const $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
+const canvas = $("pdfCanvas");
+const ctx = canvas.getContext("2d");
+const stage = $("stage");
+const overlay = $("overlay");
+const statusBox = $("status");
 
-  const draftInput = $("draftPdf");
-  const sealInput = $("sealImage");
-  const stampInput = $("stampImage");
-  const pageSelect = $("pageSelect");
-  const assetSelect = $("assetSelect");
-  const canvas = $("pdfCanvas");
-  const ctx = canvas.getContext("2d");
-  const stage = $("stage");
-  const overlay = $("overlay");
-  const status = $("status");
+let draftBytes = null;
+let draftDoc = null;
+let referenceDoc = null;
+let images = {seal:null, stamp:null};
+let imageFiles = {seal:null, stamp:null};
+let positions = {
+  seal:{x:0.05,y:0.05,w:0.25},
+  stamp:{x:0.05,y:0.05,w:0.25}
+};
+let dragging = null;
 
-  let draftBytes = null;
-  let pdfDocument = null;
-  let currentPage = 1;
-  let pageCount = 0;
-  let currentViewport = null;
-  let drag = null;
-
-  // Key format: page number + image type.
-  // Values use normalized positions, not screen pixels.
-  let positions = {};
-
-  const imageUrls = { seal: null, stamp: null };
-  const imageFiles = { seal: null, stamp: null };
-
-  function setStatus(message) {
-    status.textContent = message;
+function status(message){
+  statusBox.textContent = message;
+}
+function asset(){
+  return $("assetSelect").value;
+}
+function pos(){
+  return positions[asset()];
+}
+function clamp(v,min,max){
+  return Math.max(min,Math.min(max,v));
+}
+function imageRatio(){
+  return overlay.naturalWidth && overlay.naturalHeight
+    ? overlay.naturalHeight/overlay.naturalWidth : 1;
+}
+function imageSize(){
+  const p=pos();
+  const w=p.w*canvas.width;
+  return {w,h:w*imageRatio()};
+}
+function renderOverlay(){
+  if(overlay.hidden || !canvas.width) return;
+  const p=pos();
+  const size=imageSize();
+  const maxX=Math.max(0,canvas.width-size.w);
+  const maxY=Math.max(0,canvas.height-size.h);
+  p.x=clamp(p.x,0,maxX/canvas.width);
+  p.y=clamp(p.y,0,maxY/canvas.height);
+  overlay.style.width=size.w+"px";
+  overlay.style.height=size.h+"px";
+  overlay.style.left=(p.x*canvas.width)+"px";
+  overlay.style.top=(p.y*canvas.height)+"px";
+  $("widthInput").value=Math.round(size.w);
+}
+async function showImage(){
+  const url=images[asset()];
+  if(!url){
+    overlay.hidden=true;
+    return;
   }
-
-  function positionKey(page, asset) {
-    return `${page}:${asset}`;
-  }
-
-  function currentKey() {
-    return positionKey(currentPage, assetSelect.value);
-  }
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
-  function getPosition() {
-    const key = currentKey();
-    if (!positions[key]) {
-      positions[key] = {
-        x: 0.05,
-        y: 0.05,
-        w: 0.25
-      };
+  overlay.hidden=false;
+  overlay.src=url;
+  await new Promise(resolve=>{
+    if(overlay.complete) resolve();
+    else {
+      overlay.onload=resolve;
+      overlay.onerror=resolve;
     }
-    return positions[key];
+  });
+  renderOverlay();
+}
+async function renderFirstPage(){
+  if(!draftDoc) return;
+  const page=await draftDoc.getPage(1);
+  const base=page.getViewport({scale:1});
+  const maxWidth=Math.max(280,Math.min(850,window.innerWidth-65));
+  const viewport=page.getViewport({scale:maxWidth/base.width});
+  canvas.width=Math.round(viewport.width);
+  canvas.height=Math.round(viewport.height);
+  canvas.style.width=canvas.width+"px";
+  canvas.style.height=canvas.height+"px";
+  stage.style.width=canvas.width+"px";
+  stage.style.height=canvas.height+"px";
+  await page.render({canvasContext:ctx,viewport}).promise;
+  await showImage();
+  status("First page ready. Stamp ya seal ko mouse se adjust karein.");
+}
+async function readPdf(file){
+  return pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+}
+
+$("loadBtn").addEventListener("click",async()=>{
+  const file=$("draftPdf").files[0];
+  if(!file){
+    status("Pehle Draft Agreement PDF upload karein.");
+    return;
   }
-
-  function getImageNaturalRatio() {
-    if (!overlay.naturalWidth || !overlay.naturalHeight) return 1;
-    return overlay.naturalHeight / overlay.naturalWidth;
+  try{
+    status("Draft PDF load ho rahi hai...");
+    draftBytes=new Uint8Array(await file.arrayBuffer());
+    draftDoc=await readPdf(file);
+    await renderFirstPage();
+  }catch(e){
+    console.error(e);
+    status("Draft PDF load nahi hui. Valid PDF upload karein.");
   }
+});
 
-  function getRenderedImageSize(pos) {
-    const width = pos.w * canvas.width;
-    const height = width * getImageNaturalRatio();
-    return { width, height };
+$("referenceBtn").addEventListener("click",async()=>{
+  const file=$("referencePdf").files[0];
+  if(!file){
+    status("Pehle Reference Final Agreement PDF select karein.");
+    return;
   }
-
-  function updateOverlayFromPosition() {
-    if (!pdfDocument || !overlay.src || overlay.hidden) return;
-
-    const pos = getPosition();
-    const size = getRenderedImageSize(pos);
-
-    overlay.style.width = `${size.width}px`;
-    overlay.style.height = `${size.height}px`;
-    overlay.style.left = `${pos.x * canvas.width}px`;
-    overlay.style.top = `${pos.y * canvas.height}px`;
+  try{
+    referenceDoc=await readPdf(file);
+    const page=await referenceDoc.getPage(1);
+    const viewport=page.getViewport({scale:1});
+    const maxWidth=Math.max(280,Math.min(850,window.innerWidth-65));
+    const scaled=page.getViewport({scale:maxWidth/viewport.width});
+    canvas.width=Math.round(scaled.width);
+    canvas.height=Math.round(scaled.height);
+    canvas.style.width=canvas.width+"px";
+    canvas.style.height=canvas.height+"px";
+    stage.style.width=canvas.width+"px";
+    stage.style.height=canvas.height+"px";
+    overlay.hidden=true;
+    await page.render({canvasContext:ctx,viewport:scaled}).promise;
+    status("Reference PDF ka first page dikh raha hai. Draft par wapas jaane ke liye Draft PDF Load Karein dabayein.");
+  }catch(e){
+    console.error(e);
+    status("Reference PDF read nahi hui.");
   }
+});
 
-  async function renderPage(pageNumber) {
-    if (!pdfDocument) return;
+$("sealImage").addEventListener("change",()=>{
+  const f=$("sealImage").files[0];
+  if(!f)return;
+  if(images.seal)URL.revokeObjectURL(images.seal);
+  images.seal=URL.createObjectURL(f);
+  imageFiles.seal=f;
+  if(draftDoc && asset()==="seal") showImage();
+});
+$("stampImage").addEventListener("change",()=>{
+  const f=$("stampImage").files[0];
+  if(!f)return;
+  if(images.stamp)URL.revokeObjectURL(images.stamp);
+  images.stamp=URL.createObjectURL(f);
+  imageFiles.stamp=f;
+  if(draftDoc && asset()==="stamp") showImage();
+});
 
-    currentPage = pageNumber;
-    pageSelect.value = String(pageNumber);
+$("assetSelect").addEventListener("change",()=>{
+  if(draftDoc) showImage();
+});
+$("widthInput").addEventListener("change",()=>{
+  if(!canvas.width)return;
+  pos().w=clamp(Number($("widthInput").value)/canvas.width,0.01,1);
+  renderOverlay();
+});
 
-    const page = await pdfDocument.getPage(pageNumber);
-    const baseViewport = page.getViewport({ scale: 1 });
+overlay.addEventListener("pointerdown",e=>{
+  if(overlay.hidden)return;
+  e.preventDefault();
+  overlay.setPointerCapture(e.pointerId);
+  overlay.classList.add("dragging");
+  dragging={
+    x:e.clientX,y:e.clientY,
+    left:parseFloat(overlay.style.left)||0,
+    top:parseFloat(overlay.style.top)||0
+  };
+});
+overlay.addEventListener("pointermove",e=>{
+  if(!dragging)return;
+  e.preventDefault();
+  const rect=stage.getBoundingClientRect();
+  const sx=canvas.width/rect.width;
+  const sy=canvas.height/rect.height;
+  const size=imageSize();
+  const x=clamp(dragging.left+(e.clientX-dragging.x)*sx,0,Math.max(0,canvas.width-size.w));
+  const y=clamp(dragging.top+(e.clientY-dragging.y)*sy,0,Math.max(0,canvas.height-size.h));
+  pos().x=x/canvas.width;
+  pos().y=y/canvas.height;
+  renderOverlay();
+});
+function stopDrag(){
+  dragging=null;
+  overlay.classList.remove("dragging");
+}
+overlay.addEventListener("pointerup",stopDrag);
+overlay.addEventListener("pointercancel",stopDrag);
+overlay.addEventListener("lostpointercapture",stopDrag);
 
-    const maxWidth = Math.max(280, Math.min(850, window.innerWidth - 80));
-    const scale = maxWidth / baseViewport.width;
+function move(dx,dy){
+  if(!draftDoc||overlay.hidden)return;
+  const p=pos();
+  const size=imageSize();
+  p.x=clamp(p.x+dx/canvas.width,0,Math.max(0,(canvas.width-size.w)/canvas.width));
+  p.y=clamp(p.y+dy/canvas.height,0,Math.max(0,(canvas.height-size.h)/canvas.height));
+  renderOverlay();
+}
+$("upBtn").onclick=()=>move(0,-Number($("stepInput").value));
+$("downBtn").onclick=()=>move(0,Number($("stepInput").value));
+$("leftBtn").onclick=()=>move(-Number($("stepInput").value),0);
+$("rightBtn").onclick=()=>move(Number($("stepInput").value),0);
 
-    currentViewport = page.getViewport({ scale });
-    canvas.width = Math.round(currentViewport.width);
-    canvas.height = Math.round(currentViewport.height);
-    canvas.style.width = `${canvas.width}px`;
-    canvas.style.height = `${canvas.height}px`;
+$("centerBtn").onclick=()=>{
+  const p=pos();
+  const size=imageSize();
+  p.x=Math.max(0,(canvas.width-size.w)/2/canvas.width);
+  p.y=Math.max(0,(canvas.height-size.h)/2/canvas.height);
+  renderOverlay();
+};
+$("saveBtn").onclick=()=>{
+  try{
+    localStorage.setItem("rentAgreementPositions",JSON.stringify(positions));
+    status("Seal aur stamp ki positions save ho gayi.");
+  }catch(e){
+    status("Browser storage mein save nahi ho paya. Template download karein.");
+  }
+};
 
-    stage.style.width = `${canvas.width}px`;
-    stage.style.height = `${canvas.height}px`;
+$("exportTemplate").onclick=()=>{
+  const blob=new Blob([JSON.stringify({version:1,positions},null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="agreement-position-template.json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 
-    await page.render({
-      canvasContext: ctx,
-      viewport: currentViewport
-    }).promise;
+$("templateFile").addEventListener("change",async()=>{
+  const file=$("templateFile").files[0];
+  if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(!data.positions || !data.positions.seal || !data.positions.stamp){
+      throw new Error("Invalid template");
+    }
+    positions=data.positions;
+    if(draftDoc)await showImage();
+    status("Template load ho gaya. Position check kar lein.");
+  }catch(e){
+    status("Template file valid nahi hai.");
+  }
+});
 
-    const url = imageUrls[assetSelect.value];
-    if (url) {
-      overlay.src = url;
-      overlay.hidden = false;
-      await new Promise(resolve => {
-        if (overlay.complete) resolve();
-        else {
-          overlay.onload = resolve;
-          overlay.onerror = resolve;
-        }
+try{
+  const saved=localStorage.getItem("rentAgreementPositions");
+  if(saved){
+    const parsed=JSON.parse(saved);
+    if(parsed.seal && parsed.stamp)positions=parsed;
+  }
+}catch(e){}
+
+$("downloadBtn").addEventListener("click",async()=>{
+  if(!draftBytes){
+    status("Pehle Draft PDF load karein.");
+    return;
+  }
+  if(!imageFiles.seal && !imageFiles.stamp){
+    status("Pehle Seal ya Stamp image upload karein.");
+    return;
+  }
+  try{
+    status("Final PDF ban rahi hai...");
+    const {PDFDocument}=PDFLib;
+    const pdf=await PDFDocument.load(draftBytes);
+    const firstPage=pdf.getPages()[0];
+    const pageSize=firstPage.getSize();
+
+    // Only first page is used; never apply images to other pages.
+    for(const type of ["seal","stamp"]){
+      const file=imageFiles[type];
+      if(!file)continue;
+      const p=positions[type];
+      const bytes=await file.arrayBuffer();
+      let embedded;
+      if(file.type==="image/png")embedded=await pdf.embedPng(bytes);
+      else if(file.type==="image/jpeg")embedded=await pdf.embedJpg(bytes);
+      else continue;
+
+      const width=clamp(p.w,0.01,1)*pageSize.width;
+      const height=width*embedded.height/embedded.width;
+      const x=clamp(p.x,0,1)*pageSize.width;
+      const top=clamp(p.y,0,1)*pageSize.height;
+
+      firstPage.drawImage(embedded,{
+        x,
+        y:pageSize.height-top-height,
+        width,
+        height
       });
-      updateOverlayFromPosition();
-    } else {
-      overlay.hidden = true;
     }
 
-    $("prevBtn").disabled = currentPage <= 1;
-    $("nextBtn").disabled = currentPage >= pageCount;
-    $("savePositionBtn").disabled = false;
-    $("downloadBtn").disabled = !draftBytes;
-    ["upBtn", "downBtn", "leftBtn", "rightBtn", "centerBtn"].forEach(id => {
-      $(id).disabled = !url;
-    });
-
-    setStatus(`Page ${currentPage} / ${pageCount}. Image ko drag karein ya arrow buttons use karein.`);
-  }
-
-  function loadImageFile(file, asset) {
-    if (!file) return;
-
-    if (imageUrls[asset]) URL.revokeObjectURL(imageUrls[asset]);
-
-    imageFiles[asset] = file;
-    imageUrls[asset] = URL.createObjectURL(file);
-
-    if (pdfDocument && assetSelect.value === asset) {
-      renderPage(currentPage);
-    }
-  }
-
-  sealInput.addEventListener("change", () => {
-    loadImageFile(sealInput.files[0], "seal");
-  });
-
-  stampInput.addEventListener("change", () => {
-    loadImageFile(stampInput.files[0], "stamp");
-  });
-
-  $("loadBtn").addEventListener("click", async () => {
-    const file = draftInput.files[0];
-    if (!file) {
-      setStatus("Pehle draft PDF upload karein.");
-      return;
-    }
-
-    try {
-      setStatus("PDF load ho rahi hai...");
-      draftBytes = new Uint8Array(await file.arrayBuffer());
-
-      // Render copy; preserve original bytes for export.
-      pdfDocument = await pdfjsLib.getDocument({
-        data: draftBytes.slice()
-      }).promise;
-
-      pageCount = pdfDocument.numPages;
-      currentPage = 1;
-      pageSelect.innerHTML = "";
-
-      for (let i = 1; i <= pageCount; i++) {
-        const option = document.createElement("option");
-        option.value = i;
-        option.textContent = `Page ${i}`;
-        pageSelect.appendChild(option);
-      }
-
-      pageSelect.disabled = false;
-      $("prevBtn").disabled = false;
-      $("nextBtn").disabled = false;
-      $("savePositionBtn").disabled = false;
-      $("downloadBtn").disabled = false;
-
-      await renderPage(1);
-    } catch (error) {
-      console.error(error);
-      setStatus("PDF load nahi hui. Valid PDF file try karein.");
-    }
-  });
-
-  pageSelect.addEventListener("change", () => {
-    renderPage(Number(pageSelect.value));
-  });
-
-  assetSelect.addEventListener("change", () => {
-    renderPage(currentPage);
-  });
-
-  $("prevBtn").addEventListener("click", () => {
-    if (currentPage > 1) renderPage(currentPage - 1);
-  });
-
-  $("nextBtn").addEventListener("click", () => {
-    if (currentPage < pageCount) renderPage(currentPage + 1);
-  });
-
-  $("widthInput").addEventListener("change", () => {
-    if (!canvas.width) return;
-
-    const pos = getPosition();
-    pos.w = clamp(Number($("widthInput").value) / canvas.width, 0.01, 1);
-    updateOverlayFromPosition();
-  });
-
-  $("centerBtn").addEventListener("click", () => {
-    const pos = getPosition();
-    pos.x = 0.5 - pos.w / 2;
-    const size = getRenderedImageSize(pos);
-    pos.y = Math.max(0, 0.5 - size.height / canvas.height / 2);
-    updateOverlayFromPosition();
-  });
-
-  // Smooth pointer-based dragging.
-  overlay.addEventListener("pointerdown", event => {
-    if (overlay.hidden || !canvas.width) return;
-
-    event.preventDefault();
-    overlay.setPointerCapture(event.pointerId);
-    overlay.classList.add("dragging");
-
-    drag = {
-      pointerX: event.clientX,
-      pointerY: event.clientY,
-      left: parseFloat(overlay.style.left) || 0,
-      top: parseFloat(overlay.style.top) || 0
-    };
-  });
-
-  overlay.addEventListener("pointermove", event => {
-    if (!drag) return;
-
-    event.preventDefault();
-
-    const pos = getPosition();
-    const rect = stage.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const dx = (event.clientX - drag.pointerX) * scaleX;
-    const dy = (event.clientY - drag.pointerY) * scaleY;
-
-    const size = getRenderedImageSize(pos);
-    const maxX = Math.max(0, canvas.width - size.width);
-    const maxY = Math.max(0, canvas.height - size.height);
-
-    const x = clamp(drag.left + dx, 0, maxX);
-    const y = clamp(drag.top + dy, 0, maxY);
-
-    overlay.style.left = `${x}px`;
-    overlay.style.top = `${y}px`;
-    pos.x = x / canvas.width;
-    pos.y = y / canvas.height;
-  });
-
-  function stopDragging() {
-    drag = null;
-    overlay.classList.remove("dragging");
-  }
-
-  overlay.addEventListener("pointerup", stopDragging);
-  overlay.addEventListener("pointercancel", stopDragging);
-  overlay.addEventListener("lostpointercapture", stopDragging);
-
-  function moveBy(dx, dy) {
-    if (!pdfDocument || overlay.hidden) return;
-
-    const pos = getPosition();
-    const size = getRenderedImageSize(pos);
-    const maxX = Math.max(0, canvas.width - size.width);
-    const maxY = Math.max(0, canvas.height - size.height);
-
-    let x = pos.x * canvas.width + dx;
-    let y = pos.y * canvas.height + dy;
-
-    x = clamp(x, 0, maxX);
-    y = clamp(y, 0, maxY);
-
-    pos.x = x / canvas.width;
-    pos.y = y / canvas.height;
-    updateOverlayFromPosition();
-  }
-
-  $("upBtn").addEventListener("click", () => {
-    moveBy(0, -Number($("stepInput").value));
-  });
-
-  $("downBtn").addEventListener("click", () => {
-    moveBy(0, Number($("stepInput").value));
-  });
-
-  $("leftBtn").addEventListener("click", () => {
-    moveBy(-Number($("stepInput").value), 0);
-  });
-
-  $("rightBtn").addEventListener("click", () => {
-    moveBy(Number($("stepInput").value), 0);
-  });
-
-  document.addEventListener("keydown", event => {
-    const tag = document.activeElement?.tagName;
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
-    if (!pdfDocument || overlay.hidden) return;
-
-    const step = Number($("stepInput").value);
-    const moves = {
-      ArrowUp: [0, -step],
-      ArrowDown: [0, step],
-      ArrowLeft: [-step, 0],
-      ArrowRight: [step, 0]
-    };
-
-    if (moves[event.key]) {
-      event.preventDefault();
-      moveBy(...moves[event.key]);
-    }
-  });
-
-  $("savePositionBtn").addEventListener("click", () => {
-    if (!pdfDocument) return;
-
-    const pos = getPosition();
-    pos.x = clamp(pos.x, 0, 1);
-    pos.y = clamp(pos.y, 0, 1);
-    pos.w = clamp(pos.w, 0.01, 1);
-
-    setStatus(`Page ${currentPage} ki ${assetSelect.value} position save ho gayi.`);
-  });
-
-  $("exportTemplateBtn").addEventListener("click", () => {
-    const blob = new Blob(
-      [JSON.stringify({ version: 1, positions }, null, 2)],
-      { type: "application/json" }
-    );
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "agreement-position-template.json";
+    const output=await pdf.save();
+    const blob=new Blob([output],{type:"application/pdf"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="processed-agreement.pdf";
     a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  $("templateFile").addEventListener("change", async () => {
-    const file = $("templateFile").files[0];
-    if (!file) return;
-
-    try {
-      const template = JSON.parse(await file.text());
-      if (!template.positions || typeof template.positions !== "object") {
-        throw new Error("Invalid template");
-      }
-
-      positions = template.positions;
-      if (pdfDocument) await renderPage(currentPage);
-      setStatus("Position template load ho gaya. Placement verify karein.");
-    } catch (error) {
-      setStatus("Template file sahi JSON format mein nahi hai.");
-    }
-  });
-
-  $("downloadBtn").addEventListener("click", async () => {
-    if (!draftBytes) {
-      setStatus("Pehle draft PDF load karein.");
-      return;
-    }
-
-    try {
-      setStatus("Final PDF ban rahi hai...");
-
-      const { PDFDocument } = PDFLib;
-      const pdf = await PDFDocument.load(draftBytes);
-      const pages = pdf.getPages();
-
-      for (const [key, pos] of Object.entries(positions)) {
-        const [pageText, asset] = key.split(":");
-        const pageNumber = Number(pageText);
-        const page = pages[pageNumber - 1];
-        const file = imageFiles[asset];
-
-        if (!page || !file) continue;
-
-        const bytes = await file.arrayBuffer();
-        let embedded;
-
-        if (file.type === "image/png") {
-          embedded = await pdf.embedPng(bytes);
-        } else if (file.type === "image/jpeg" || file.type === "image/jpg") {
-          embedded = await pdf.embedJpg(bytes);
-        } else {
-          continue;
-        }
-
-        const pageSize = page.getSize();
-        const width = pos.w * pageSize.width;
-        const height = width * embedded.height / embedded.width;
-
-        const x = clamp(pos.x, 0, 1) * pageSize.width;
-        const yFromTop = clamp(pos.y, 0, 1) * pageSize.height;
-
-        page.drawImage(embedded, {
-          x,
-          y: pageSize.height - yFromTop - height,
-          width,
-          height
-        });
-      }
-
-      const output = await pdf.save();
-      const blob = new Blob([output], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "processed-agreement.pdf";
-      a.click();
-
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setStatus("PDF download shuru ho gaya. File kholkar har page check karein.");
-    } catch (error) {
-      console.error(error);
-      setStatus("PDF process nahi hui. Image PNG ya JPG mein aur PDF valid format mein try karein.");
-    }
-  });
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    status("Final PDF download ho gayi. File kholkar first page check karein.");
+  }catch(e){
+    console.error(e);
+    status("PDF process nahi hui. PNG/JPG image aur valid PDF try karein.");
+  }
+});
 </script>
 </body>
 </html>
