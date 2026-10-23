@@ -2,350 +2,525 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rent Agreement PDF Studio</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif}
-header{background:#075985;color:white;padding:22px}
-header h1{margin:0;font-size:24px}
-header p{margin:8px 0 0;color:#e0f2fe}
-main{max-width:1000px;margin:20px auto;padding:14px}
-.card{background:white;padding:18px;border-radius:13px;margin-bottom:16px;box-shadow:0 2px 10px #0000000b}
-h2{font-size:19px;margin-top:0}
-label{display:block;font-weight:bold;font-size:14px;margin:14px 0 7px}
-input,select,button{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px}
-button{background:#0369a1;color:white;font-weight:bold;border:0;cursor:pointer;margin-top:10px}
-button.secondary{background:#475569}
-button:disabled{opacity:.5;cursor:not-allowed}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-small,.muted{color:#64748b;line-height:1.5}
-.notice{background:#fff7d6;padding:12px;border-radius:8px;line-height:1.5;font-size:13px}
-#viewer{overflow:auto;background:#e2e8f0;padding:12px;border-radius:8px}
-#sheet{position:relative;width:max-content;max-width:100%;margin:auto}
-#pageCanvas{display:block;max-width:100%;height:auto}
-.overlay{position:absolute;display:none;touch-action:none;cursor:move;object-fit:fill;user-select:none;border:1px dashed #0284c7}
-.overlay.selected{outline:2px solid #0284c7}
-.status{overflow-wrap:anywhere;font-size:14px;margin-top:12px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rent Agreement Seal & Signature Tool</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f3f5f9;
+      color: #202938;
+      font-family: Arial, sans-serif;
+    }
+
+    .app {
+      max-width: 950px;
+      margin: auto;
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px #00000012;
+    }
+
+    h1 { font-size: 25px; margin-top: 0; }
+    .help { color: #586174; line-height: 1.6; }
+
+    .upload-box {
+      padding: 16px;
+      margin: 15px 0;
+      border: 1px solid #d9deea;
+      border-radius: 10px;
+      background: #fafbfe;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    input[type="file"] {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    input[type="range"] { width: 100%; }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 8px 5px 0 0;
+    }
+
+    .primary { background: #1769e0; color: white; }
+    .secondary { background: #e9edf5; color: #202938; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .preview-wrap {
+      margin-top: 20px;
+      padding: 12px;
+      background: #e8ecf3;
+      border-radius: 10px;
+      overflow: auto;
+    }
+
+    #pageStage {
+      position: relative;
+      margin: auto;
+      width: fit-content;
+      max-width: 100%;
+      line-height: 0;
+      background: white;
+      box-shadow: 0 2px 10px #00000020;
+    }
+
+    #pdfCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    #sealOverlay {
+      position: absolute;
+      display: none;
+      cursor: move;
+      touch-action: none;
+      user-select: none;
+      max-width: none;
+      z-index: 2;
+      border: 1px dashed #1769e0;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f0f5ff;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .warning { color: #8a3b12; }
+    .small { font-size: 13px; color: #657084; }
+
+    @media (max-width: 600px) {
+      body { padding: 8px; }
+      .app { padding: 14px; }
+      h1 { font-size: 21px; }
+    }
+  </style>
 </head>
+
 <body>
-<header>
-<h1>Rent Agreement PDF Studio</h1>
-<p>PDF upload • Authorized signature • Company seal • Preview • Download</p>
-</header>
+  <main class="app">
+    <h1>Rent Agreement — Seal + Signature</h1>
 
-<main>
-<section class="card">
-<h2>1. Draft PDF</h2>
-<label for="pdfInput">Rent Agreement PDF चुनें</label>
-<input id="pdfInput" type="file" accept=".pdf,application/pdf">
-<div id="pdfInfo" class="status muted">अभी कोई PDF नहीं चुनी गई।</div>
-<label for="pageSelect">Preview के लिए पेज चुनें</label>
-<select id="pageSelect" disabled></select>
-</section>
+    <p class="help">
+      अपनी PDF और संयुक्त Seal + Signature इमेज अपलोड करें।
+      इमेज को पहले पेज के preview में सही जगह रखें।
+      वही जगह और आकार PDF के हर पेज पर लागू होगा,
+      चाहे PDF में 4, 5 या उससे अधिक पेज हों।
+    </p>
 
-<section class="card">
-<h2>2. अपनी अधिकृत इमेज चुनें</h2>
-<div class="grid">
-<div>
-<label for="signInput">आपकी अधिकृत Signature Image</label>
-<input id="signInput" type="file" accept="image/png,image/jpeg">
-<button type="button" class="secondary" id="useSign">Signature चुनें</button>
-</div>
-<div>
-<label for="sealInput">आपकी अधिकृत Company Seal</label>
-<input id="sealInput" type="file" accept="image/png,image/jpeg">
-<button type="button" class="secondary" id="useSeal">Company Seal चुनें</button>
-</div>
-</div>
-<p class="muted">ये इमेज केवल आपके अधिकृत हस्ताक्षर और सील के लिए हैं। नोटरी की सील तथा प्रमाणीकरण अधिकृत नोटरी द्वारा ही किया जाना चाहिए।</p>
-</section>
+    <div class="upload-box">
+      <label for="pdfInput">1. Attach Draft PDF</label>
+      <input id="pdfInput" type="file" accept="application/pdf">
+    </div>
 
-<section class="card">
-<h2>3. इमेज की जगह सेट करें</h2>
-<p class="muted">नीचे Preview में इमेज को माउस या उंगली से खींचकर सही जगह रखें। चुनी हुई इमेज का आकार नीचे बदल सकते हैं।</p>
-<label for="activeAsset">किस इमेज को एडिट करना है?</label>
-<select id="activeAsset">
-<option value="sign">Signature</option>
-<option value="seal">Company Seal</option>
-</select>
+    <div class="upload-box">
+      <label for="imageInput">2. Attach Seal + Signature</label>
+      <input
+        id="imageInput"
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+      >
+      <p class="small">
+        पारदर्शी बैकग्राउंड वाली PNG इमेज आम तौर पर सबसे अच्छी रहती है।
+      </p>
+    </div>
 
-<div class="grid">
-<div>
-<label for="widthInput">चौड़ाई (PDF points)</label>
-<input id="widthInput" type="number" min="10" max="500" value="100">
-</div>
-<div>
-<label for="heightInput">ऊँचाई (PDF points)</label>
-<input id="heightInput" type="number" min="10" max="500" value="40">
-</div>
-</div>
+    <div class="upload-box">
+      <label for="widthSlider">
+        इमेज का आकार: <span id="widthValue">25%</span>
+      </label>
+      <input
+        id="widthSlider"
+        type="range"
+        min="5"
+        max="60"
+        value="25"
+        step="1"
+      >
+      <p class="small">
+        आकार बदलने के बाद इमेज को preview में खींचकर सही जगह रखें।
+      </p>
+    </div>
 
-<label for="applyMode">कहाँ लगाना है?</label>
-<select id="applyMode">
-<option value="current">केवल चुने हुए पेज पर</option>
-<option value="all">हर पेज पर एक ही स्थान पर</option>
-</select>
+    <div class="preview-wrap">
+      <div id="pageStage">
+        <canvas id="pdfCanvas"></canvas>
+        <img id="sealOverlay" alt="Seal and signature preview">
+      </div>
+    </div>
 
-<div id="viewer" style="margin-top:14px">
-<div id="sheet">
-<canvas id="pageCanvas"></canvas>
-<img id="signOverlay" class="overlay" alt="Signature placement preview" draggable="false">
-<img id="sealOverlay" class="overlay" alt="Company seal placement preview" draggable="false">
-</div>
-</div>
+    <p class="small">
+      Preview में इमेज को माउस या उंगली से खींचें।
+      स्थान और आकार सभी पेजों पर एक समान अनुपात में लागू होंगे।
+    </p>
 
-<div class="grid">
-<button id="saveSettings" class="secondary">Placement सेटिंग सेव करें</button>
-<button id="clearPlacement" class="secondary">चुनी इमेज की जगह रीसेट करें</button>
-</div>
-<div id="status" class="status" role="status">शुरू करने के लिए PDF अपलोड करें।</div>
-</section>
+    <button id="downloadBtn" class="primary" disabled>
+      Apply to Every Page & Download PDF
+    </button>
 
-<section class="card">
-<h2>4. Final PDF</h2>
-<div class="notice">डाउनलोड से पहले Preview और हर पेज की जाँच करें। यह टूल मूल PDF का टेक्स्ट बदलने के लिए नहीं है। यह केवल आपकी चुनी हुई अधिकृत इमेज जोड़ता है। डिजिटल कॉपी पर हस्ताक्षर की इमेज लगना अपने आप कानूनी हस्ताक्षर या नोटरी प्रमाणीकरण के बराबर नहीं है।</div>
-<button id="downloadBtn" disabled>Final PDF डाउनलोड करें</button>
-</section>
-</main>
+    <button id="resetBtn" class="secondary" type="button">
+      Reset Image Position
+    </button>
 
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    <div id="status" class="status">
+      पहले PDF और Seal + Signature इमेज अपलोड करें।
+    </div>
 
-const $ = id => document.getElementById(id);
-const canvas = $('pageCanvas');
-const ctx = canvas.getContext('2d');
-const sheet = $('sheet');
+    <p class="small warning">
+      केवल उन दस्तावेज़ों पर अपनी अधिकृत कंपनी की Seal और Signature लगाएँ
+      जिन पर ऐसा करना अधिकृत है। नोटरी की मुहर या प्रमाणन को स्वतः न लगाएँ।
+    </p>
+  </main>
 
-let pdfBytes = null;
-let pdfDoc = null;
-let scale = 1;
-let currentPage = 1;
-let assets = {
- sign:{bytes:null,type:null,url:null,x:35,y:35,w:100,h:40},
- seal:{bytes:null,type:null,url:null,x:160,y:35,w:80,h:80}
-};
-let dragging = null;
-let dragOffsetX = 0, dragOffsetY = 0;
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
-function msg(s){$('status').textContent=s;}
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-function activeKey(){return $('activeAsset').value;}
-function activeAsset(){return assets[activeKey()];}
-function activeOverlay(){return $(activeKey()+'Overlay');}
+    const pdfInput = document.getElementById("pdfInput");
+    const imageInput = document.getElementById("imageInput");
+    const canvas = document.getElementById("pdfCanvas");
+    const ctx = canvas.getContext("2d");
+    const stage = document.getElementById("pageStage");
+    const overlay = document.getElementById("sealOverlay");
+    const slider = document.getElementById("widthSlider");
+    const widthValue = document.getElementById("widthValue");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const status = document.getElementById("status");
 
-function drawOverlay(key){
- const a=assets[key], el=$(key+'Overlay');
- if(!a.url || !pdfDoc){el.style.display='none';return;}
- el.src=a.url;
- el.style.display='block';
- el.style.width=(a.w*scale)+'px';
- el.style.height=(a.h*scale)+'px';
- el.style.left=(a.x*scale)+'px';
- el.style.top=(a.y*scale)+'px';
- el.classList.toggle('selected',key===activeKey());
-}
+    let pdfBytes = null;
+    let pdfDocument = null;
+    let imageBytes = null;
+    let imageType = null;
+    let imageObjectURL = null;
 
-function drawAll(){drawOverlay('sign');drawOverlay('seal');}
+    // Normalized position: values from 0 to 1.
+    // Same relative position is used on every PDF page.
+    let posX = 0.65;
+    let posY = 0.78;
+    let displayWidth = 0.25;
 
-async function renderPage(){
- if(!pdfDoc)return;
- currentPage=Number($('pageSelect').value)||1;
- const page=await pdfDoc.getPage(currentPage);
- const viewport=page.getViewport({scale:1.25});
- scale=viewport.scale;
- canvas.width=viewport.width;
- canvas.height=viewport.height;
- canvas.style.width=viewport.width+'px';
- canvas.style.height=viewport.height+'px';
- sheet.style.width=viewport.width+'px';
- sheet.style.height=viewport.height+'px';
- await page.render({canvasContext:ctx,viewport}).promise;
- drawAll();
-}
+    let pageRenderScale = 1;
+    let renderTask = null;
+    let dragStart = null;
 
-$('pdfInput').addEventListener('change',async()=>{
- try{
-  const f=$('pdfInput').files[0];
-  if(!f)return;
-  if(f.size>30*1024*1024)throw Error('30 MB से छोटी PDF चुनें।');
-  pdfBytes=await f.arrayBuffer();
-  pdfDoc=await pdfjsLib.getDocument({data:pdfBytes.slice(0)}).promise;
-  $('pageSelect').innerHTML='';
-  for(let i=1;i<=pdfDoc.numPages;i++){
-   const opt=document.createElement('option');
-   opt.value=i;opt.textContent='पेज '+i;
-   $('pageSelect').appendChild(opt);
-  }
-  $('pageSelect').disabled=false;
-  $('downloadBtn').disabled=false;
-  $('pdfInfo').textContent='फाइल: '+f.name+' | पेज: '+pdfDoc.numPages;
-  await renderPage();
-  msg('PDF लोड हो गई। इमेज चुनें और Preview में जगह सेट करें।');
- }catch(e){msg('PDF Error: '+e.message);}
-});
+    function setStatus(message) {
+      status.textContent = message;
+    }
 
-$('pageSelect').addEventListener('change',renderPage);
+    function updateReadyState() {
+      downloadBtn.disabled = !(pdfBytes && pdfDocument && imageBytes);
+    }
 
-async function loadImage(key,file){
- if(!file)return;
- if(file.size>5*1024*1024){msg('इमेज 5 MB से छोटी होनी चाहिए।');return;}
- if(!['image/png','image/jpeg'].includes(file.type)){
-  msg('केवल PNG या JPG इमेज चुनें।');return;
- }
- const bytes=await file.arrayBuffer();
- if(assets[key].url)URL.revokeObjectURL(assets[key].url);
- assets[key].bytes=bytes;
- assets[key].type=file.type;
- assets[key].url=URL.createObjectURL(file);
- const bitmap=await createImageBitmap(file);
- const ratio=bitmap.width/bitmap.height;
- assets[key].h=assets[key].w/ratio;
- bitmap.close();
- $('activeAsset').value=key;
- $('widthInput').value=assets[key].w;
- $('heightInput').value=Math.round(assets[key].h*100)/100;
- drawAll();
- msg((key==='sign'?'Signature':'Company Seal')+' इमेज लोड हो गई। Preview में इसे खींचकर सही जगह रखें।');
-}
+    function updateOverlay() {
+      if (!pdfDocument || !imageObjectURL) return;
 
-$('signInput').addEventListener('change',e=>loadImage('sign',e.target.files[0]));
-$('sealInput').addEventListener('change',e=>loadImage('seal',e.target.files[0]));
-$('useSign').addEventListener('click',()=>{
- $('activeAsset').value='sign';syncControls();drawAll();
-});
-$('useSeal').addEventListener('click',()=>{
- $('activeAsset').value='seal';syncControls();drawAll();
-});
+      const pageWidth = canvas.clientWidth;
+      const pageHeight = canvas.clientHeight;
 
-function syncControls(){
- const a=activeAsset();
- $('widthInput').value=a.w;
- $('heightInput').value=a.h;
- drawAll();
-}
-$('activeAsset').addEventListener('change',syncControls);
+      if (!pageWidth || !pageHeight) return;
 
-$('widthInput').addEventListener('change',()=>{
- const v=Number($('widthInput').value);
- if(v>0&&v<=500){activeAsset().w=v;drawAll();}
-});
-$('heightInput').addEventListener('change',()=>{
- const v=Number($('heightInput').value);
- if(v>0&&v<=500){activeAsset().h=v;drawAll();}
-});
+      const overlayWidth = pageWidth * displayWidth;
+      const ratio = overlay.naturalHeight / overlay.naturalWidth;
+      const overlayHeight = overlayWidth * ratio;
 
-for(const key of ['sign','seal']){
- const el=$(key+'Overlay');
- el.addEventListener('pointerdown',e=>{
-  if(!pdfDoc)return;
-  $('activeAsset').value=key;
-  syncControls();
-  dragging=key;
-  const r=sheet.getBoundingClientRect();
-  dragOffsetX=e.clientX-r.left-assets[key].x*scale;
-  dragOffsetY=e.clientY-r.top-assets[key].y*scale;
-  el.setPointerCapture(e.pointerId);
-  e.preventDefault();
- });
- el.addEventListener('pointermove',e=>{
-  if(dragging!==key)return;
-  const r=sheet.getBoundingClientRect();
-  assets[key].x=Math.max(0,(e.clientX-r.left-dragOffsetX)/scale);
-  assets[key].y=Math.max(0,(e.clientY-r.top-dragOffsetY)/scale);
-  drawAll();
- });
- el.addEventListener('pointerup',()=>dragging=null);
- el.addEventListener('pointercancel',()=>dragging=null);
-}
+      overlay.style.width = overlayWidth + "px";
+      overlay.style.height = overlayHeight + "px";
+      overlay.style.left = (posX * pageWidth) + "px";
+      overlay.style.top = (posY * pageHeight) + "px";
+      overlay.style.display = "block";
+    }
 
-$('clearPlacement').addEventListener('click',()=>{
- const a=activeAsset();
- a.x=20;a.y=20;
- drawAll();
- msg('चुनी इमेज की जगह रीसेट हो गई।');
-});
+    async function renderFirstPage() {
+      if (!pdfDocument) return;
 
-$('saveSettings').addEventListener('click',()=>{
- try{
-  const safe={};
-  for(const key of ['sign','seal']){
-   const a=assets[key];
-   safe[key]={x:a.x,y:a.y,w:a.w,h:a.h};
-  }
-  localStorage.setItem('rentAgreementPlacementV2',JSON.stringify(safe));
-  msg('Placement सेटिंग इस ब्राउज़र में सेव हो गई।');
- }catch(e){msg('सेटिंग सेव नहीं हो सकी।');}
-});
+      try {
+        if (renderTask) {
+          try { renderTask.cancel(); } catch (_) {}
+        }
 
-try{
- const saved=JSON.parse(localStorage.getItem('rentAgreementPlacementV2')||'null');
- if(saved){
-  for(const key of ['sign','seal']){
-   if(saved[key])Object.assign(assets[key],saved[key]);
-  }
- }
-}catch(e){}
+        const page = await pdfDocument.getPage(1);
+        const availableWidth = Math.min(760, window.innerWidth - 80);
+        const baseViewport = page.getViewport({ scale: 1 });
+        pageRenderScale = availableWidth / baseViewport.width;
 
-$('downloadBtn').addEventListener('click',async()=>{
- try{
-  if(!pdfBytes)throw Error('पहले Draft PDF चुनें।');
-  if(!assets.sign.bytes&&!assets.seal.bytes)
-   throw Error('कम से कम एक अधिकृत Signature या Company Seal इमेज चुनें।');
+        const viewport = page.getViewport({ scale: pageRenderScale });
+        const outputScale = window.devicePixelRatio || 1;
 
-  const out=await PDFLib.PDFDocument.load(pdfBytes.slice(0));
-  let embedded={};
-  for(const key of ['sign','seal']){
-   const a=assets[key];
-   if(!a.bytes)continue;
-   embedded[key]=a.type==='image/png'
-    ?await out.embedPng(a.bytes)
-    :await out.embedJpg(a.bytes);
-  }
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = viewport.width + "px";
+        canvas.style.height = viewport.height + "px";
 
-  const pages=out.getPages();
-  const mode=$('applyMode').value;
-  const targets=mode==='all'
-   ?pages.map((p,i)=>({p,index:i}))
-   :[{p:pages[currentPage-1],index:currentPage-1}];
+        stage.style.width = viewport.width + "px";
+        stage.style.height = viewport.height + "px";
 
-  for(const {p,index} of targets){
-   const {width,height}=p.getSize();
-   const previewPage=await pdfDoc.getPage(index+1);
-   const originalViewport=previewPage.getViewport({scale:1.25});
-   const factorX=width/originalViewport.width;
-   const factorY=height/originalViewport.height;
+        renderTask = page.render({
+          canvasContext: ctx,
+          viewport: viewport,
+          transform: outputScale !== 1
+            ? [outputScale, 0, 0, outputScale, 0, 0]
+            : null
+        });
 
-   for(const key of ['sign','seal']){
-    const a=assets[key],img=embedded[key];
-    if(!img)continue;
-    const x=a.x*scale*factorX;
-    const w=a.w*factorX;
-    const h=a.h*factorY;
-    const y=height-(a.y*scale*factorY)-h;
+        await renderTask.promise;
+        updateOverlay();
+      } catch (error) {
+        if (error && error.name !== "RenderingCancelledException") {
+          console.error(error);
+          setStatus("PDF preview नहीं दिख पाया। कृपया दूसरी PDF फ़ाइल आज़माएँ।");
+        }
+      }
+    }
 
-    if(x<0||y<0||x+w>width||y+h>height)
-     throw Error('इमेज पेज के बाहर जा रही है। Preview में उसका आकार या स्थान ठीक करें।');
+    pdfInput.addEventListener("change", async () => {
+      const file = pdfInput.files[0];
+      if (!file) return;
 
-    p.drawImage(img,{x,y,width:w,height:h});
-   }
-  }
+      try {
+        setStatus("PDF लोड हो रही है...");
 
-  const bytes=await out.save();
-  const blob=new Blob([bytes],{type:'application/pdf'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download='rent-agreement-final.pdf';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),3000);
-  msg('PDF डाउनलोड शुरू हो गई। फाइल खोलकर सभी पेज जाँचें।');
- }catch(e){msg('PDF Error: '+e.message);}
-});
-</script>
+        pdfBytes = new Uint8Array(await file.arrayBuffer());
+        pdfDocument = await pdfjsLib.getDocument({
+          data: pdfBytes.slice()
+        }).promise;
+
+        await renderFirstPage();
+
+        setStatus(
+          "PDF तैयार है। कुल पेज: " + pdfDocument.numPages +
+          ". संयुक्त इमेज की जगह preview में सेट करें।"
+        );
+
+        updateReadyState();
+      } catch (error) {
+        console.error(error);
+        pdfBytes = null;
+        pdfDocument = null;
+        updateReadyState();
+        setStatus("PDF नहीं खुली। कृपया वैध PDF फ़ाइल अपलोड करें।");
+      }
+    });
+
+    imageInput.addEventListener("change", async () => {
+      const file = imageInput.files[0];
+      if (!file) return;
+
+      const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+
+      if (!allowedTypes.includes(file.type)) {
+        setStatus("कृपया PNG, JPG या WebP इमेज अपलोड करें।");
+        imageInput.value = "";
+        return;
+      }
+
+      try {
+        imageBytes = new Uint8Array(await file.arrayBuffer());
+        imageType = file.type;
+
+        if (imageObjectURL) URL.revokeObjectURL(imageObjectURL);
+        imageObjectURL = URL.createObjectURL(file);
+
+        overlay.onload = () => {
+          updateOverlay();
+          updateReadyState();
+        };
+
+        overlay.src = imageObjectURL;
+        setStatus("Seal + Signature इमेज लोड हो गई। Preview में इसकी जगह सेट करें।");
+        updateReadyState();
+      } catch (error) {
+        console.error(error);
+        imageBytes = null;
+        updateReadyState();
+        setStatus("इमेज लोड नहीं हो पाई। दूसरी इमेज आज़माएँ।");
+      }
+    });
+
+    slider.addEventListener("input", () => {
+      displayWidth = Number(slider.value) / 100;
+      widthValue.textContent = slider.value + "%";
+      updateOverlay();
+    });
+
+    function startDrag(event) {
+      if (overlay.style.display === "none") return;
+
+      event.preventDefault();
+      overlay.setPointerCapture(event.pointerId);
+
+      dragStart = {
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        left: posX * canvas.clientWidth,
+        top: posY * canvas.clientHeight
+      };
+    }
+
+    function moveDrag(event) {
+      if (!dragStart) return;
+
+      event.preventDefault();
+
+      const pageWidth = canvas.clientWidth;
+      const pageHeight = canvas.clientHeight;
+      const overlayWidth = overlay.offsetWidth;
+      const overlayHeight = overlay.offsetHeight;
+
+      const nextLeft =
+        dragStart.left + (event.clientX - dragStart.pointerX);
+      const nextTop =
+        dragStart.top + (event.clientY - dragStart.pointerY);
+
+      posX = Math.max(
+        0,
+        Math.min(1 - overlayWidth / pageWidth, nextLeft / pageWidth)
+      );
+
+      posY = Math.max(
+        0,
+        Math.min(1 - overlayHeight / pageHeight, nextTop / pageHeight)
+      );
+
+      updateOverlay();
+    }
+
+    function endDrag() {
+      dragStart = null;
+    }
+
+    overlay.addEventListener("pointerdown", startDrag);
+    overlay.addEventListener("pointermove", moveDrag);
+    overlay.addEventListener("pointerup", endDrag);
+    overlay.addEventListener("pointercancel", endDrag);
+    overlay.addEventListener("lostpointercapture", endDrag);
+
+    resetBtn.addEventListener("click", () => {
+      posX = 0.65;
+      posY = 0.78;
+      displayWidth = 0.25;
+      slider.value = "25";
+      widthValue.textContent = "25%";
+      updateOverlay();
+      setStatus("इमेज की शुरुआती जगह और आकार रीसेट कर दिए गए हैं।");
+    });
+
+    window.addEventListener("resize", () => {
+      if (pdfDocument) renderFirstPage();
+    });
+
+    downloadBtn.addEventListener("click", async () => {
+      if (!pdfBytes || !pdfDocument || !imageBytes) return;
+
+      downloadBtn.disabled = true;
+      setStatus("PDF तैयार हो रही है। कृपया प्रतीक्षा करें...");
+
+      try {
+        const { PDFDocument } = PDFLib;
+        const outPdf = await PDFDocument.load(pdfBytes);
+
+        let embeddedImage;
+
+        if (imageType === "image/png") {
+          embeddedImage = await outPdf.embedPng(imageBytes);
+        } else if (imageType === "image/jpeg") {
+          embeddedImage = await outPdf.embedJpg(imageBytes);
+        } else {
+          // Convert WebP to PNG using the browser before embedding.
+          const img = new Image();
+          img.src = imageObjectURL;
+          await img.decode();
+
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = img.naturalWidth;
+          tempCanvas.height = img.naturalHeight;
+          tempCanvas.getContext("2d").drawImage(img, 0, 0);
+
+          const pngBlob = await new Promise(resolve =>
+            tempCanvas.toBlob(resolve, "image/png")
+          );
+
+          if (!pngBlob) throw new Error("WebP conversion failed");
+
+          embeddedImage = await outPdf.embedPng(
+            new Uint8Array(await pngBlob.arrayBuffer())
+          );
+        }
+
+        const pages = outPdf.getPages();
+
+        for (const page of pages) {
+          const { width, height } = page.getSize();
+
+          const drawWidth = width * displayWidth;
+          const drawHeight =
+            drawWidth * embeddedImage.height / embeddedImage.width;
+
+          const x = posX * width;
+          const y = height - (posY * height) - drawHeight;
+
+          page.drawImage(embeddedImage, {
+            x,
+            y,
+            width: drawWidth,
+            height: drawHeight
+          });
+        }
+
+        const finalBytes = await outPdf.save();
+        const blob = new Blob([finalBytes], {
+          type: "application/pdf"
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = "Rent-Agreement-Completed.pdf";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+        setStatus(
+          "PDF डाउनलोड शुरू हो गया। कुल " + pages.length +
+          " पेजों पर Seal + Signature लगाई गई है।"
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus(
+          "PDF तैयार नहीं हो पाई। कृपया जाँचें कि PDF और इमेज सही हैं, फिर दोबारा कोशिश करें।"
+        );
+      } finally {
+        updateReadyState();
+      }
+    });
+  </script>
 </body>
 </html>
