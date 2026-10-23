@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rent Agreement Automation</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;padding:25px;color:#172033}
+.container{max-width:720px;margin:20px auto;background:white;padding:25px;border-radius:16px;box-shadow:0 4px 20px #0001}
+h1{color:#075985;font-size:27px}
+p{line-height:1.6;color:#475569}
+label{display:block;margin:18px 0 8px;font-weight:bold}
+input,button{box-sizing:border-box;width:100%;padding:13px;border-radius:8px;font-size:15px}
+input{border:1px solid #cbd5e1}
+button{border:0;background:#0369a1;color:white;font-weight:bold;cursor:pointer;margin-top:14px}
+button:hover{background:#075985}
+.secondary{background:#475569}
+#status{margin-top:18px;overflow-wrap:anywhere}
+.note{background:#fef3c7;padding:12px;border-radius:8px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Rent Agreement Automation</h1>
+<p>अपना Rent Agreement PDF चुनें और उसकी एक कॉपी डाउनलोड करें।</p>
+
+<label for="pdf">1. Draft PDF अपलोड करें</label>
+<input id="pdf" type="file" accept="application/pdf">
+
+<label for="stamp">2. अधिकृत Stamp Image (वैकल्पिक)</label>
+<input id="stamp" type="file" accept="image/png,image/jpeg">
+
+<div class="note">
+यह शुरुआती वर्जन है। अभी यह स्टाम्प या हस्ताक्षर अपने आप PDF पर नहीं लगाएगा। पहले PDF अपलोड और डाउनलोड की सुविधा जाँचें। वास्तविक हस्ताक्षर संबंधित व्यक्ति से और नोटरी प्रमाणीकरण अधिकृत नोटरी से ही करवाएँ।
+</div>
+
+<button id="preview">PDF की जानकारी देखें</button>
+<button id="download" class="secondary" disabled>Draft PDF डाउनलोड करें</button>
+<div id="status" role="status"></div>
+</div>
+
+<script>
+const pdfInput = document.getElementById('pdf');
+const stampInput = document.getElementById('stamp');
+const statusBox = document.getElementById('status');
+const downloadBtn = document.getElementById('download');
+let selectedPdf = null;
+
+pdfInput.addEventListener('change', () => {
+ selectedPdf = pdfInput.files[0] || null;
+ downloadBtn.disabled = !selectedPdf;
+ statusBox.textContent = selectedPdf
+ ? 'PDF चुनी गई: ' + selectedPdf.name
+ : 'कोई PDF नहीं चुनी गई।';
+});
+
+stampInput.addEventListener('change', () => {
+ const f = stampInput.files[0];
+ if (f) statusBox.textContent +=
+ ' | Stamp image चुनी गई: ' + f.name +
+ '। अभी PDF पर नहीं लगाई गई है।';
+});
+
+document.getElementById('preview').addEventListener('click', () => {
+ if (!selectedPdf) {
+  statusBox.textContent = 'पहले Draft PDF चुनें।';
+  return;
+ }
+ statusBox.textContent = 'फाइल: ' + selectedPdf.name +
+ ' | आकार: ' + (selectedPdf.size / 1024).toFixed(1) +
+ ' KB। यह अभी केवल फाइल चयन की जाँच है।';
+});
+
+downloadBtn.addEventListener('click', () => {
+ if (!selectedPdf) return;
+ const url = URL.createObjectURL(selectedPdf);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = 'rent-agreement-draft.pdf';
+ a.click();
+ setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+</script>
+</body>
+</html>
