@@ -170,3 +170,175 @@ downloadBtn.addEventListener('click',async()=>{
 </script>
 </body>
 </html>
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rent Agreement PDF Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+body{font-family:Arial;background:#f1f5f9;margin:0;padding:20px;color:#172033}
+main{max-width:850px;margin:auto;background:white;padding:22px;border-radius:14px}
+h1{color:#075985}
+label{display:block;font-weight:bold;margin:17px 0 8px}
+input,select,button{width:100%;box-sizing:border-box;padding:12px;margin:4px 0;border:1px solid #cbd5e1;border-radius:7px}
+button{background:#0369a1;color:white;font-weight:bold;cursor:pointer}
+#page{position:relative;margin-top:15px;overflow:auto;background:#e2e8f0}
+canvas{display:block;max-width:100%;height:auto}
+#stampPreview{position:absolute;width:100px;display:none;cursor:move;touch-action:none}
+.note{background:#fef3c7;padding:12px;border-radius:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+<h1>Rent Agreement PDF Tool</h1>
+<p>PDF देखें और अधिकृत स्टाम्प को सही स्थान पर लगाएँ।</p>
+
+<label>1. Rent Agreement PDF चुनें</label>
+<input id="pdf" type="file" accept=".pdf,application/pdf">
+
+<label>2. स्टाम्प इमेज चुनें (PNG/JPG)</label>
+<input id="stamp" type="file" accept="image/png,image/jpeg">
+
+<label>3. PDF पेज चुनें</label>
+<select id="pageNumber" disabled><option>पहले PDF चुनें</option></select>
+
+<label>4. स्टाम्प का आकार (पिक्सेल)</label>
+<input id="stampSize" type="range" min="40" max="220" value="100">
+
+<div id="page">
+<canvas id="preview"></canvas>
+<img id="stampPreview" alt="Stamp preview">
+</div>
+
+<p id="status">शुरू करने के लिए PDF चुनें।</p>
+<button id="download" disabled>स्टाम्प सहित PDF डाउनलोड करें</button>
+
+<div class="note">
+स्टाम्प केवल तभी इस्तेमाल करें जब आपके पास उसका उपयोग करने का अधिकार हो। क्लाइंट के हस्ताक्षर वास्तविक सहमति से करवाएँ। यह टूल नोटरी प्रमाणित नहीं करता और स्टाम्प ड्यूटी या कानूनी वैधता की पुष्टि नहीं करता। PDF और स्टाम्प इस ब्राउज़र में प्रोसेस किए जाते हैं; लाइब्रेरी लोड करने के लिए इंटरनेट जरूरी है।
+</div>
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const pdfInput=document.getElementById('pdf');
+const stampInput=document.getElementById('stamp');
+const canvas=document.getElementById('preview');
+const ctx=canvas.getContext('2d');
+const pageBox=document.getElementById('page');
+const stampPreview=document.getElementById('stampPreview');
+const pageSelect=document.getElementById('pageNumber');
+const sizeInput=document.getElementById('stampSize');
+const status=document.getElementById('status');
+const downloadBtn=document.getElementById('download');
+
+let pdfBytes=null, pdfDoc=null, stampBytes=null, stampType=null;
+let pageScale=1, stampX=30, stampY=30, currentPage=1;
+
+pdfInput.addEventListener('change',async()=>{
+ try{
+  const f=pdfInput.files[0];
+  if(!f)return;
+  if(f.size>25*1024*1024)throw Error('PDF 25 MB से छोटी होनी चाहिए।');
+  pdfBytes=await f.arrayBuffer();
+  pdfDoc=await pdfjsLib.getDocument({data:pdfBytes.slice(0)}).promise;
+  pageSelect.innerHTML='';
+  for(let i=1;i<=pdfDoc.numPages;i++){
+   const o=document.createElement('option');
+   o.value=i;o.textContent='पेज '+i;pageSelect.appendChild(o);
+  }
+  pageSelect.disabled=false;
+  currentPage=1;
+  await renderPage();
+  status.textContent='PDF लोड हो गई। स्टाम्प चुनें और Preview में जगह सेट करें।';
+  downloadBtn.disabled=false;
+ }catch(e){status.textContent='त्रुटि: '+e.message;}
+});
+
+async function renderPage(){
+ if(!pdfDoc)return;
+ currentPage=Number(pageSelect.value)||1;
+ const page=await pdfDoc.getPage(currentPage);
+ const viewport=page.getViewport({scale:1.4});
+ canvas.width=viewport.width;canvas.height=viewport.height;
+ pageScale=viewport.scale;
+ await page.render({canvasContext:ctx,viewport}).promise;
+ pageBox.style.width=canvas.width+'px';
+ pageBox.style.maxWidth='100%';
+ stampPreview.style.display=stampBytes?'block':'none';
+}
+
+pageSelect.addEventListener('change',renderPage);
+
+stampInput.addEventListener('change',async()=>{
+ const f=stampInput.files[0];
+ if(!f)return;
+ if(f.size>5*1024*1024){status.textContent='स्टाम्प इमेज 5 MB से छोटी होनी चाहिए।';return;}
+ stampBytes=await f.arrayBuffer();
+ stampType=f.type;
+ stampPreview.src=URL.createObjectURL(f);
+ stampPreview.style.display='block';
+ stampPreview.style.width=sizeInput.value+'px';
+ stampX=30;stampY=30;
+ stampPreview.style.left=stampX+'px';
+ stampPreview.style.top=stampY+'px';
+ status.textContent='स्टाम्प Preview में दिख रहा है। माउस से खींचकर जगह बदलें।';
+});
+
+sizeInput.addEventListener('input',()=>{
+ stampPreview.style.width=sizeInput.value+'px';
+});
+
+let dragging=false,offsetX=0,offsetY=0;
+stampPreview.addEventListener('pointerdown',e=>{
+ dragging=true;
+ const r=stampPreview.getBoundingClientRect();
+ offsetX=e.clientX-r.left;offsetY=e.clientY-r.top;
+ stampPreview.setPointerCapture(e.pointerId);
+});
+stampPreview.addEventListener('pointermove',e=>{
+ if(!dragging)return;
+ const r=pageBox.getBoundingClientRect();
+ stampX=Math.max(0,e.clientX-r.left-offsetX);
+ stampY=Math.max(0,e.clientY-r.top-offsetY);
+ stampPreview.style.left=stampX+'px';
+ stampPreview.style.top=stampY+'px';
+});
+stampPreview.addEventListener('pointerup',()=>dragging=false);
+stampPreview.addEventListener('pointercancel',()=>dragging=false);
+
+downloadBtn.addEventListener('click',async()=>{
+ try{
+  if(!pdfBytes)throw Error('पहले PDF चुनें।');
+  const out=await PDFLib.PDFDocument.load(pdfBytes);
+  if(stampBytes){
+   if(!stampType)throw Error('स्टाम्प इमेज चुनें।');
+   const img=stampType==='image/png'
+    ?await out.embedPng(stampBytes)
+    :await out.embedJpg(stampBytes);
+   const p=out.getPages()[currentPage-1];
+   const rect=canvas.getBoundingClientRect();
+   const scaleX=canvas.width/rect.width;
+   const x=stampX*scaleX/pageScale;
+   const y=p.getHeight()-(stampY*scaleX/pageScale)-(Number(sizeInput.value)*scaleX/pageScale);
+   const w=Number(sizeInput.value)*scaleX/pageScale;
+   const h=w*img.height/img.width;
+   p.drawImage(img,{x,y,width:w,height:h});
+  }
+  const bytes=await out.save();
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='rent-agreement-reviewed.pdf';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  status.textContent='PDF डाउनलोड शुरू हो गया। डाउनलोड की गई फाइल खोलकर स्टाम्प की जगह जाँचें।';
+ }catch(e){status.textContent='त्रुटि: '+e.message;}
+});
+</script>
+</body>
+</html>
