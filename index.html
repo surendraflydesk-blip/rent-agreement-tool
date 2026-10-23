@@ -1,175 +1,220 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agreement Auto Placement</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agreement Auto Position Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <style>
-body{font-family:Arial;background:#f1f5f9;margin:0;padding:18px;color:#172033}
-main{max-width:850px;margin:auto;background:white;padding:22px;border-radius:14px}
-h2{margin-top:0}label{display:block;font-weight:bold;margin-top:16px}
-input,button{width:100%;padding:12px;margin-top:7px;box-sizing:border-box;border-radius:8px;border:1px solid #cbd5e1}
-button{background:#075ee8;color:white;font-weight:bold;cursor:pointer;border:0;margin-top:14px}
-#status{white-space:pre-wrap;background:#f8fafc;padding:12px;margin-top:14px}
-canvas{width:100%;border:1px solid #ddd;margin-top:14px}
+*{box-sizing:border-box}
+body{font-family:Arial;background:#eef2f7;margin:0;padding:16px;color:#172033}
+main{max-width:1000px;margin:auto;background:#fff;padding:20px;border-radius:12px}
+label{display:block;font-weight:bold;margin-top:14px}
+input,button,select{width:100%;padding:11px;margin-top:7px;border:1px solid #cbd5e1;border-radius:7px}
+button{background:#075ee8;color:white;border:0;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+#stage{position:relative;margin-top:14px;border:1px solid #bbb;overflow:auto;background:#ddd}
+#page{display:block;max-width:100%;height:auto;margin:auto;background:white}
+#overlay{position:absolute;left:0;top:0;display:none;cursor:move;touch-action:none;user-select:none}
+#status{white-space:pre-wrap;background:#f5f7fb;padding:12px;margin-top:12px}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 </style>
 </head>
 <body>
 <main>
-<h2>Agreement Auto Placement Tool</h2>
+<h2>Agreement — Mouse Adjust & Auto Save</h2>
 
-<label>Reference Final Agreement PDF</label>
+<label>1. Reference Final PDF (optional)</label>
 <input id="reference" type="file" accept=".pdf">
 
-<label>New Draft PDF</label>
+<label>2. New Draft PDF</label>
 <input id="draft" type="file" accept=".pdf">
 
-<label>New valid stamp image (PNG/JPG)</label>
-<input id="stamp" type="file" accept="image/png,image/jpeg">
-
-<label>Company seal and signature image (PNG/JPG)</label>
+<label>3. Company Seal + Signature Image</label>
 <input id="seal" type="file" accept="image/png,image/jpeg">
 
-<button id="scan">SCAN PDF AUTOMATICALLY</button>
-<canvas id="preview"></canvas>
-<button id="download">DOWNLOAD PROCESSED PDF</button>
-<div id="status">Upload both PDFs and press Scan.</div>
+<label>4. New valid stamp image (optional)</label>
+<input id="stamp" type="file" accept="image/png,image/jpeg">
+
+<label>Draft page</label>
+<div class="tools">
+<select id="pageNo"></select>
+<select id="asset">
+<option value="seal">Seal / Signature</option>
+<option value="stamp">New valid stamp</option>
+</select>
+</div>
+
+<div class="tools">
+<div>
+<label>Image width (PDF points)</label>
+<input id="imgWidth" type="number" min="10" max="500" value="120">
+</div>
+<div>
+<label>Image height (PDF points)</label>
+<input id="imgHeight" type="number" min="10" max="500" value="55">
+</div>
+</div>
+
+<button id="load">Load Draft & Preview</button>
+<div id="stage">
+<canvas id="page"></canvas>
+<img id="overlay" alt="Drag image to position">
+</div>
+<div class="tools">
+<button id="showAsset">Show Selected Image</button>
+<button id="savePos">Save Position for This Page</button>
+</div>
+<button id="download">Download PDF Using Saved Positions</button>
+<div id="status">Draft upload karein, phir Load Draft dabayein.</div>
 </main>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc=
 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
 const $=id=>document.getElementById(id);
-let source=null, found=[];
+let pdfData=null,pdfDoc=null,pages=[],positions={};
+let activeImage=null,drag=null,scale=1;
 
-function status(s){$('status').textContent=s}
+function say(s){$('status').textContent=s}
+function key(){return $('pageNo').value+'_'+$('asset').value}
 
-async function loadPDF(file){
- const bytes=await file.arrayBuffer();
- const doc=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise;
- const pages=[];
- for(let i=1;i<=doc.numPages;i++){
-  const p=await doc.getPage(i);
-  const viewport=p.getViewport({scale:1.5});
-  const canvas=document.createElement('canvas');
-  canvas.width=viewport.width;canvas.height=viewport.height;
-  await p.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
-  const content=await p.getTextContent();
-  const items=content.items.map(t=>{
-   const x=t.transform[4]*1.5;
-   const y=viewport.height-t.transform[5]*1.5;
-   return {text:t.str.toLowerCase(),x,y,w:t.width*1.5,h:Math.max(10,Math.abs(t.transform[3])*1.5)};
-  });
-  pages.push({page:i,canvas,width:viewport.width,height:viewport.height,items,
-   text:items.map(a=>a.text).join(' ')});
- }
- return {bytes,doc,pages};
-}
-
-function anchor(page,words){
- for(const word of words){
-  const hit=page.items.find(x=>x.text.includes(word));
-  if(hit)return hit;
- }
- return null;
-}
-
-function imageFile(file){
+async function readImage(file){
+ if(!file)return null;
  return new Promise((resolve,reject)=>{
-  const im=new Image();
-  im.onload=()=>resolve(im);
+  const url=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>resolve({im,url});
   im.onerror=reject;
-  im.src=URL.createObjectURL(file);
+  im.src=url;
  });
 }
 
-$('scan').onclick=async()=>{
+async function loadDraft(){
  try{
-  if(!$('reference').files[0]||!$('draft').files[0]){
-   status('Select Reference PDF and Draft PDF first.');return;
+  const file=$('draft').files[0];
+  if(!file){say('Pehle Draft PDF select karein.');return}
+  say('PDF load ho raha hai...');
+  pdfData=await file.arrayBuffer();
+  pdfDoc=await pdfjsLib.getDocument({data:pdfData.slice(0)}).promise;
+  pages=[];
+  $('pageNo').innerHTML='';
+  for(let i=1;i<=pdfDoc.numPages;i++){
+   pages.push(await pdfDoc.getPage(i));
+   const o=document.createElement('option');
+   o.value=i;o.textContent='Page '+i;$('pageNo').appendChild(o);
   }
-  status('Scanning pages...');
-  const ref=await loadPDF($('reference').files[0]);
-  source=await loadPDF($('draft').files[0]);
-  found=[];
+  await showPage();
+  say('Page load ho gaya. Image select karke Show Selected Image dabayein. Mouse se image ko sahi jagah drag karein, phir Save Position dabayein.');
+ }catch(e){say('Load error: '+e.message)}
+}
 
-  // Find the stamp location in the reference by visual image analysis
-  // and text matching; do not reuse an old government e-stamp.
-  const stampWords=['e-stamp','e stamp','non judicial','stamp duty',
-                    'certificate no','certificate number'];
-  let refStamp=null;
-  for(const p of ref.pages){
-   const a=anchor(p,stampWords);
-   if(a){refStamp={page:p.page,anchor:a};break;}
-  }
+async function showPage(){
+ if(!pages.length)return;
+ const p=pages[Number($('pageNo').value||1)-1];
+ const viewport=p.getViewport({scale:1.5});
+ const c=$('page');c.width=viewport.width;c.height=viewport.height;
+ const ctx=c.getContext('2d');
+ await p.render({canvasContext:ctx,viewport}).promise;
+ const rect=c.getBoundingClientRect();
+ scale=c.width/rect.width;
+ $('overlay').style.display='none';
+ const saved=positions[key()];
+ if(saved){
+  $('overlay').style.display='block';
+  $('overlay').src=saved.url;
+  placeOverlay(saved.x*c.width,saved.y*c.height,
+    saved.w*c.width,saved.h*c.height);
+ }
+}
 
-  // Detect likely signature locations on draft pages.
-  const signWords=['authorized signatory','authorised signatory',
-   'signature of client','signature','proprietor','owner signature'];
-  for(const p of source.pages){
-   const a=anchor(p,signWords);
-   if(a)found.push({page:p.page,type:'seal',anchor:a,
-    pw:p.width,ph:p.height});
-  }
+function placeOverlay(x,y,w,h){
+ const c=$('page'),o=$('overlay');
+ o.style.left=(c.offsetLeft+x/scale)+'px';
+ o.style.top=(c.offsetTop+y/scale)+'px';
+ o.style.width=(w/scale)+'px';
+ o.style.height=(h/scale)+'px';
+}
 
-  // Preview first draft page.
-  const p=source.pages[0],c=$('preview');
-  c.width=p.canvas.width;c.height=p.canvas.height;
-  c.getContext('2d').drawImage(p.canvas,0,0);
+$('load').onclick=loadDraft;
+$('pageNo').onchange=showPage;
+$('asset').onchange=showPage;
 
-  status(
-   'Reference pages: '+ref.pages.length+
-   '\nDraft pages: '+source.pages.length+
-   '\nReference stamp text: '+(refStamp?'found on page '+refStamp.page:'not detected')+
-   '\nDraft signature text matches: '+found.length+
-   '\n\nScan finished. Download creates a PDF using detected text anchors.'
-  );
- }catch(e){status('Scan error: '+e.message)}
+$('showAsset').onclick=async()=>{
+ const file=$('asset').value==='seal'?
+  $('seal').files[0]:$('stamp').files[0];
+ if(!file){say('Pehle selected image upload karein.');return}
+ try{
+  activeImage=await readImage(file);
+  const c=$('page'),o=$('overlay');
+  o.src=activeImage.url;
+  o.style.display='block';
+  const w=Number($('imgWidth').value)||120;
+  const h=Number($('imgHeight').value)||55;
+  const rect=c.getBoundingClientRect();
+  placeOverlay(30*scale,30*scale,w*scale,h*scale);
+  say('Image dikh rahi hai. Mouse se drag karke sahi jagah rakhein. Size badalne ke liye width/height badalkar Show Selected Image dabayein.');
+ }catch(e){say('Image error: '+e.message)}
+};
+
+$('overlay').addEventListener('pointerdown',e=>{
+ if(!activeImage && !$('overlay').src)return;
+ drag={x:e.clientX-parseFloat($('overlay').style.left),
+       y:e.clientY-parseFloat($('overlay').style.top)};
+ $('overlay').setPointerCapture(e.pointerId);
+});
+$('overlay').addEventListener('pointermove',e=>{
+ if(!drag)return;
+ const c=$('page'),o=$('overlay');
+ const left=e.clientX-drag.x,top=e.clientY-drag.y;
+ o.style.left=left+'px';o.style.top=top+'px';
+});
+$('overlay').addEventListener('pointerup',()=>drag=null);
+$('overlay').addEventListener('pointercancel',()=>drag=null);
+
+$('savePos').onclick=async()=>{
+ const file=$('asset').value==='seal'?
+  $('seal').files[0]:$('stamp').files[0];
+ if(!file||!pages.length){say('Draft aur image load karein.');return}
+ if(!$('overlay').src){say('Pehle Show Selected Image dabayein.');return}
+ const c=$('page'),o=$('overlay'),cr=c.getBoundingClientRect();
+ const left=(parseFloat(o.style.left)-c.offsetLeft)*scale;
+ const top=(parseFloat(o.style.top)-c.offsetTop)*scale;
+ const w=o.getBoundingClientRect().width*scale;
+ const h=o.getBoundingClientRect().height*scale;
+ const img=await readImage(file);
+ positions[key()]={url:img.url,file,type:$('asset').value,
+  x:left/c.width,y:top/c.height,w:w/c.width,h:h/c.height};
+ say('Position saved: Page '+$('pageNo').value+' / '+$('asset').value+
+ '\nIsi tarah har zaroori page aur image ki position save karein.');
 };
 
 $('download').onclick=async()=>{
  try{
-  if(!source){status('Press SCAN PDF AUTOMATICALLY first.');return}
-  const pdf=await PDFLib.PDFDocument.load(source.bytes);
-  let seal=null,stamp=null;
-  async function embed(file){
-   if(!file)return null;
-   const b=await file.arrayBuffer();
-   return file.type==='image/png'?pdf.embedPng(b):pdf.embedJpg(b);
-  }
-  seal=await embed($('seal').files[0]);
-  stamp=await embed($('stamp').files[0]);
-
-  // Only place a new, separately supplied stamp where draft text
-  // provides a matching anchor. Never duplicate the reference e-stamp.
+  if(!pdfData||!pages.length){say('Pehle Load Draft dabayein.');return}
+  const pdf=await PDFLib.PDFDocument.load(pdfData);
   let count=0;
-  for(const item of found){
-   if(!seal)continue;
-   const page=pdf.getPage(item.page-1),size=page.getSize();
-   const sx=size.width/item.pw,sy=size.height/item.ph;
-   const a=item.anchor;
-   const w=105,h=45;
-   const x=Math.max(0,Math.min(a.x*sx,size.width-w));
-   const y=Math.max(0,Math.min(size.height-(a.y+a.h)*sy-h,size.height-h));
-   page.drawImage(seal,{x,y,width:w,height:h,opacity:0.9});
+  for(const k of Object.keys(positions)){
+   const p=positions[k],page=pdf.getPage(Number(k.split('_')[0])-1);
+   const {width,height}=page.getSize();
+   const imageBytes=await p.file.arrayBuffer();
+   const img=p.file.type==='image/png'?
+    await pdf.embedPng(imageBytes):await pdf.embedJpg(imageBytes);
+   page.drawImage(img,{
+    x:p.x*width,y:height-(p.y+p.h)*height,
+    width:p.w*width,height:p.h*height
+   });
    count++;
   }
-
-  // Stamp is deliberately not placed unless an actual valid stamp
-  // location is identified in the new draft.
-  const output=await pdf.save();
-  const url=URL.createObjectURL(new Blob([output],{type:'application/pdf'}));
-  const a=document.createElement('a');
-  a.href=url;a.download='Processed_Agreement.pdf';a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
-  status('PDF downloaded.\nCompany seal placements: '+count+
-   '\nStamp image selected: '+($('stamp').files[0]?'Yes':'No')+
-   '\nReview the PDF before using it.');
- }catch(e){status('PDF error: '+e.message)}
+  const out=await pdf.save();
+  const url=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));
+  const a=document.createElement('a');a.href=url;
+  a.download='Agreement_Adjusted.pdf';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  say('PDF download ho gaya.\nSaved image positions: '+count+
+  '\nPositions is session mein saved hain; agli baar naya Draft load karke positions dobara set karein.');
+ }catch(e){say('Export error: '+e.message)}
 };
 </script>
 </body>
