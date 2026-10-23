@@ -4,98 +4,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agreement Automation Tool</title>
+<title>Agreement Reference Analyzer</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;padding:18px;background:#f2f5fa;color:#202938;font-family:Arial,sans-serif}
-main{max-width:900px;margin:auto;background:white;padding:22px;border-radius:14px}
+body{font-family:Arial,sans-serif;background:#f2f5fa;margin:0;padding:16px;color:#202938}
+main{max-width:1000px;margin:auto;background:white;border-radius:14px;padding:20px}
 h1{font-size:24px}
-.box{border:1px solid #dce2ec;border-radius:10px;padding:15px;margin:14px 0}
-label{display:block;font-weight:bold;margin-bottom:9px}
-input[type=file]{width:100%;margin:8px 0}
-button{padding:12px 16px;margin:6px 4px 6px 0;border:0;border-radius:8px;cursor:pointer;font-weight:bold}
+.box{border:1px solid #dce2ec;border-radius:10px;padding:14px;margin:14px 0}
+label{display:block;font-weight:bold;margin:10px 0}
+input[type=file]{max-width:100%;display:block;margin-top:8px}
+button{padding:11px 15px;border:0;border-radius:8px;cursor:pointer;margin:5px 4px 5px 0}
 .primary{background:#1769e0;color:white}
 .secondary{background:#e9edf5}
-button:disabled{opacity:.5;cursor:not-allowed}
-.help{color:#5d687a;line-height:1.6}
-#status{background:#eef4ff;padding:12px;border-radius:8px;line-height:1.5;overflow-wrap:anywhere}
-#stage{position:relative;margin:auto;width:fit-content;max-width:100%;line-height:0;background:white}
-#preview{display:block;max-width:100%;height:auto}
-#overlay{position:absolute;display:none;cursor:move;touch-action:none;border:1px dashed #1769e0;max-width:none}
-#wrap{padding:12px;background:#e9edf4;overflow:auto;margin-top:12px}
-.small{font-size:13px;color:#687386;line-height:1.5}
+button:disabled{opacity:.5}
+.small{font-size:13px;color:#657084;line-height:1.5}
+#status{background:#eef4ff;padding:12px;border-radius:8px;line-height:1.5}
+#pages{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.pagecard{border:1px solid #dce2ec;border-radius:9px;padding:12px}
+.pagecard h3{font-size:16px;margin:0 0 8px}
+.pagecard label{font-weight:normal}
+#previewWrap{background:#e9edf4;padding:12px;overflow:auto}
+#stage{position:relative;margin:auto;width:fit-content;line-height:0}
+#pdfCanvas{display:block}
+#overlay{position:absolute;display:none;max-width:none;cursor:move;touch-action:none;border:1px dashed #1769e0}
 </style>
 </head>
 <body>
 <main>
-<h1>Agreement Automation Tool</h1>
-<p class="help">
-एक बार Final Agreement reference सेट करें। अगली बार केवल Draft PDF
-अपलोड करें। कंपनी की अधिकृत Seal + Signature की जगह preview में सेट
-करें और सभी पेजों पर समान अनुपात में लगाएँ।
+<h1>Agreement Reference Analyzer</h1>
+<p class="small">
+पहले Final Agreement reference अपलोड करें। फिर Draft अपलोड करें।
+प्रत्येक पेज की सामग्री देखें और चुनें कि उस पेज पर कौन-सी अधिकृत
+इमेज लगानी है।
 </p>
 
 <div class="box">
-<label for="reference">1. Final Agreement — Reference (एक बार)</label>
+<label>1. Final Agreement — Reference PDF</label>
 <input id="reference" type="file" accept="application/pdf">
-<button id="saveReference" class="secondary">Save Reference</button>
+<button id="analyzeReference" class="secondary">Analyze Reference</button>
 <p class="small">
-Reference केवल इस ब्राउज़र में सेव होगा। इसे दूसरी डिवाइस या ब्राउज़र
-में अपने-आप उपलब्ध नहीं माना जाएगा।
+Reference से टेक्स्ट और पेजों की जानकारी पढ़ी जाएगी। यह अपने-आप
+किसी सरकारी प्रमाणपत्र को नए दस्तावेज़ के लिए वैध नहीं बनाता।
 </p>
 </div>
 
 <div class="box">
-<label for="draft">2. Draft Agreement PDF</label>
+<label>2. Draft Agreement PDF</label>
 <input id="draft" type="file" accept="application/pdf">
-<p id="pageInfo" class="small">अभी कोई Draft PDF लोड नहीं हुई है।</p>
+<p id="pageInfo" class="small">Draft अपलोड नहीं हुई है।</p>
 </div>
 
 <div class="box">
-<label for="seal">3. Company Seal + Signature Image</label>
-<input id="seal" type="file" accept="image/png,image/jpeg">
+<label>3. Company Seal + Signature — अधिकृत इमेज</label>
+<input id="companyImage" type="file" accept="image/png,image/jpeg">
+<label>4. नए दस्तावेज़ के लिए वैध Stamp Image (यदि लागू हो)</label>
+<input id="stampImage" type="file" accept="image/png,image/jpeg">
 <p class="small">
-केवल अधिकृत कंपनी की Seal + Signature इमेज लगाएँ।
+पुराने सरकारी ई-स्टाम्प की इमेज को नए दस्तावेज़ पर पुनः इस्तेमाल न करें।
 </p>
 </div>
 
 <div class="box">
-<label for="stamp">4. वैध नए ई-स्टाम्प / स्टाम्प की फ़ाइल (वैकल्पिक)</label>
-<input id="stamp" type="file" accept="image/png,image/jpeg">
+<h2>पेज के अनुसार चयन</h2>
 <p class="small">
-नए दस्तावेज़ के लिए वैध स्टाम्प की इमेज हो तो उसकी जगह preview में
-सेट कर सकते हैं। पुराने सरकारी ई-स्टाम्प की छवि को नए प्रमाणपत्र के
-रूप में पुनः उपयोग न करें।
+Reference और Draft का टेक्स्ट विश्लेषण होने के बाद प्रत्येक पेज के
+लिए विकल्प चुनें। पेज का लेआउट अलग हो तो preview भी जाँचें।
 </p>
+<div id="pages">पहले Draft PDF अपलोड करें।</div>
 </div>
 
 <div class="box">
-<label for="width">Seal + Signature का आकार: <span id="widthText">25%</span></label>
-<input id="width" type="range" min="5" max="60" value="25">
-<label for="stampWidth">स्टाम्प का आकार: <span id="stampWidthText">25%</span></label>
-<input id="stampWidth" type="range" min="5" max="60" value="25">
-<p class="small">
-जिस इमेज को चुनेंगे, उसे preview में खींचकर सही जगह रखें।
-</p>
-</div>
-
-<div id="wrap">
+<h2>Preview और इमेज की जगह</h2>
+<label>Preview के लिए Draft पेज</label>
+<select id="previewPage"></select>
+<label>किस इमेज की जगह सेट करनी है?</label>
+<select id="assetChoice">
+<option value="company">Company Seal + Signature</option>
+<option value="stamp">वैध Stamp Image</option>
+</select>
+<label>इमेज की चौड़ाई: <span id="widthLabel">25%</span></label>
+<input id="imageWidth" type="range" min="5" max="60" value="25">
+<div id="previewWrap">
 <div id="stage">
-<canvas id="preview"></canvas>
-<img id="overlay" alt="Selected image preview">
+<canvas id="pdfCanvas"></canvas>
+<img id="overlay" alt="Image placement preview">
 </div>
 </div>
-
 <p class="small">
-Preview Draft के पहले पेज का है। इमेज की जगह सभी पेजों पर समान
-relative position में लागू होगी। डाउनलोड के बाद सभी पेज जाँचें।
+इमेज को preview में खींचकर जगह सेट करें। इसकी स्थिति केवल उन पेजों
+पर लागू होगी जिन्हें नीचे चुना गया है।
 </p>
+</div>
 
-<button id="download" class="primary" disabled>Apply & Download PDF</button>
-<button id="reset" class="secondary">Reset Position</button>
-
-<p id="status">पहले Final Agreement reference और Draft PDF अपलोड करें।</p>
-</main>
+<button id="download" class="primary" disabled>Prepare & Download PDF</button>
+<p id="status">Reference और Draft अपलोड करें।</p>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -104,304 +106,328 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const $ = id => document.getElementById(id);
-const canvas = $("preview");
-const ctx = canvas.getContext("2d");
-const stage = $("stage");
-const overlay = $("overlay");
+let referenceDoc=null, draftDoc=null, draftBytes=null;
+let referenceText=[], draftText=[];
+let companyBytes=null, companyMime=null;
+let stampBytes=null, stampMime=null;
+let companyUrl=null, stampUrl=null;
+let renderTask=null, drag=null;
 
-let referenceBytes = null;
-let draftBytes = null;
-let pdfDocument = null;
-let sealBytes = null;
-let sealMime = null;
-let stampBytes = null;
-let stampMime = null;
-let sealUrl = null;
-let stampUrl = null;
-let activeAsset = "seal";
-let positions = {
-  seal: {x:.65,y:.78,w:.25},
-  stamp: {x:.65,y:.08,w:.25}
+const placements={
+  company:{x:.65,y:.78,w:.25},
+  stamp:{x:.65,y:.08,w:.25}
 };
-let drag = null;
-let renderTask = null;
 
-function say(message){$("status").textContent=message;}
+function say(t){$("status").textContent=t;}
+
+function getAsset(){
+  return $("assetChoice").value==="company"
+    ? {url:companyUrl,bytes:companyBytes,mime:companyMime}
+    : {url:stampUrl,bytes:stampBytes,mime:stampMime};
+}
+
+async function extractPages(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const doc=await pdfjsLib.getDocument({data:bytes.slice()}).promise;
+  const result=[];
+
+  for(let n=1;n<=doc.numPages;n++){
+    const page=await doc.getPage(n);
+    const content=await page.getTextContent();
+    result.push(content.items.map(x=>x.str).join(" "));
+  }
+  return {doc,bytes,text:result};
+}
+
+function classify(text){
+  const t=text.toLowerCase();
+  const tags=[];
+  if(/office service agreement|agreement|subscription fee/.test(t))
+    tags.push("Agreement text");
+  if(/annexure|declaration/.test(t))
+    tags.push("Annexure / Declaration");
+  if(/authorized representative|authorised representative/.test(t))
+    tags.push("Authorized Representative");
+  if(/signature|signatory|proprietor/.test(t))
+    tags.push("Signature-related text");
+  if(/stamp duty|certificate no|grn|e-stamp/.test(t))
+    tags.push("Stamp-related text");
+  return tags.length?tags.join(", "):"Text से पेज का प्रकार स्पष्ट नहीं";
+}
+
+$("analyzeReference").addEventListener("click",async()=>{
+  const file=$("reference").files[0];
+  if(!file){say("पहले Final Agreement reference चुनें।");return;}
+
+  try{
+    say("Reference के सभी पेज पढ़े जा रहे हैं...");
+    const result=await extractPages(file);
+    referenceDoc=result.doc;
+    referenceText=result.text;
+
+    say("Reference में "+referenceDoc.numPages+
+      " पेज मिले। पेजों का टेक्स्ट विश्लेषण पूरा हुआ।");
+  }catch(e){
+    console.error(e);
+    say("Reference PDF नहीं पढ़ी जा सकी।");
+  }
+});
+
+$("draft").addEventListener("change",async()=>{
+  const file=$("draft").files[0];
+  if(!file)return;
+
+  try{
+    say("Draft के पेज पढ़े जा रहे हैं...");
+    const result=await extractPages(file);
+    draftDoc=result.doc;
+    draftBytes=result.bytes;
+    draftText=result.text;
+
+    $("pageInfo").textContent="Draft में कुल "+draftDoc.numPages+" पेज हैं।";
+    $("previewPage").innerHTML="";
+
+    draftText.forEach((text,i)=>{
+      const option=document.createElement("option");
+      option.value=i;
+      option.textContent="Page "+(i+1);
+      $("previewPage").appendChild(option);
+    });
+
+    buildPageChoices();
+    await renderPreview();
+    updateReady();
+
+    say("Draft पढ़ ली गई। पेजों की सूची में प्रत्येक पेज के लिए इमेज चुनें।");
+  }catch(e){
+    console.error(e);
+    say("Draft PDF पढ़ी नहीं जा सकी।");
+  }
+});
+
+function buildPageChoices(){
+  const root=$("pages");
+  root.innerHTML="";
+
+  draftText.forEach((text,i)=>{
+    const card=document.createElement("div");
+    card.className="pagecard";
+
+    const heading=document.createElement("h3");
+    heading.textContent="Page "+(i+1);
+    card.appendChild(heading);
+
+    const info=document.createElement("p");
+    info.className="small";
+    info.textContent=classify(text);
+    card.appendChild(info);
+
+    const companyLabel=document.createElement("label");
+    const companyCheck=document.createElement("input");
+    companyCheck.type="checkbox";
+    companyCheck.dataset.page=i;
+    companyCheck.dataset.asset="company";
+    companyLabel.append(companyCheck,
+      document.createTextNode(" Company Seal + Signature लगाएँ"));
+    card.appendChild(companyLabel);
+
+    const stampLabel=document.createElement("label");
+    const stampCheck=document.createElement("input");
+    stampCheck.type="checkbox";
+    stampCheck.dataset.page=i;
+    stampCheck.dataset.asset="stamp";
+    stampLabel.append(stampCheck,
+      document.createTextNode(" वैध Stamp Image लगाएँ"));
+    card.appendChild(stampLabel);
+
+    const previewBtn=document.createElement("button");
+    previewBtn.className="secondary";
+    previewBtn.textContent="इस पेज का Preview";
+    previewBtn.addEventListener("click",()=>{
+      $("previewPage").value=String(i);
+      renderPreview();
+    });
+    card.appendChild(previewBtn);
+    root.appendChild(card);
+  });
+}
 
 function updateReady(){
-  $("download").disabled = !(draftBytes && pdfDocument);
+  $("download").disabled=!(draftBytes&&draftDoc);
 }
 
-function activePosition(){
-  return positions[activeAsset];
+function currentPosition(){
+  return placements[$("assetChoice").value];
 }
 
-function activeUrl(){
-  return activeAsset === "seal" ? sealUrl : stampUrl;
-}
-
-function chooseAsset(type){
-  activeAsset = type;
-  const url = activeUrl();
-
-  if(!url){
-    overlay.style.display = "none";
-    return;
-  }
-
-  overlay.src = url;
-  overlay.onload = drawOverlay;
+function showOverlay(){
+  const asset=getAsset();
+  if(!asset.url||!draftDoc){$("overlay").style.display="none";return;}
+  $("overlay").src=asset.url;
+  $("overlay").onload=drawOverlay;
   drawOverlay();
 }
 
 function drawOverlay(){
-  if(!overlay.naturalWidth || !canvas.clientWidth) return;
-  const p = activePosition();
-  const w = canvas.clientWidth * p.w;
-  const h = w * overlay.naturalHeight / overlay.naturalWidth;
-  overlay.style.width = w + "px";
-  overlay.style.height = h + "px";
-  overlay.style.left = (p.x * canvas.clientWidth) + "px";
-  overlay.style.top = (p.y * canvas.clientHeight) + "px";
-  overlay.style.display = "block";
+  const img=$("overlay");
+  if(!img.naturalWidth||!$("pdfCanvas").clientWidth)return;
+  const p=currentPosition();
+  const canvas=$("pdfCanvas");
+  const w=canvas.clientWidth*p.w;
+  const h=w*img.naturalHeight/img.naturalWidth;
+  img.style.width=w+"px";
+  img.style.height=h+"px";
+  img.style.left=p.x*canvas.clientWidth+"px";
+  img.style.top=p.y*canvas.clientHeight+"px";
+  img.style.display="block";
 }
 
-async function renderPage(){
-  if(!pdfDocument) return;
-
+async function renderPreview(){
+  if(!draftDoc)return;
   try{
-    if(renderTask) {
-      try { renderTask.cancel(); } catch(e){}
-    }
+    if(renderTask){try{renderTask.cancel()}catch(e){}}
+    const page=await draftDoc.getPage(Number($("previewPage").value||0)+1);
+    const base=page.getViewport({scale:1});
+    const scale=Math.min(740,window.innerWidth-70)/base.width;
+    const viewport=page.getViewport({scale});
+    const ratio=window.devicePixelRatio||1;
+    const canvas=$("pdfCanvas"),stage=$("stage");
 
-    const page = await pdfDocument.getPage(1);
-    const base = page.getViewport({scale:1});
-    const maxWidth = Math.min(740, window.innerWidth - 70);
-    const scale = maxWidth / base.width;
-    const viewport = page.getViewport({scale});
-    const ratio = window.devicePixelRatio || 1;
+    canvas.width=Math.round(viewport.width*ratio);
+    canvas.height=Math.round(viewport.height*ratio);
+    canvas.style.width=viewport.width+"px";
+    canvas.style.height=viewport.height+"px";
+    stage.style.width=viewport.width+"px";
+    stage.style.height=viewport.height+"px";
 
-    canvas.width = Math.round(viewport.width * ratio);
-    canvas.height = Math.round(viewport.height * ratio);
-    canvas.style.width = viewport.width + "px";
-    canvas.style.height = viewport.height + "px";
-    stage.style.width = viewport.width + "px";
-    stage.style.height = viewport.height + "px";
-
-    renderTask = page.render({
-      canvasContext:ctx,
+    renderTask=page.render({
+      canvasContext:canvas.getContext("2d"),
       viewport,
-      transform: ratio !== 1 ? [ratio,0,0,ratio,0,0] : null
+      transform:ratio!==1?[ratio,0,0,ratio,0,0]:null
     });
     await renderTask.promise;
-    drawOverlay();
+    showOverlay();
   }catch(e){
-    if(e.name !== "RenderingCancelledException"){
-      say("PDF preview नहीं दिख पाया। दूसरी PDF आज़माएँ।");
-    }
+    if(e.name!=="RenderingCancelledException")console.error(e);
   }
 }
 
-$("reference").addEventListener("change", async e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  referenceBytes = new Uint8Array(await file.arrayBuffer());
-  say("Reference PDF चुनी गई है। Save Reference दबाएँ।");
-});
+$("previewPage").addEventListener("change",renderPreview);
+$("assetChoice").addEventListener("change",showOverlay);
 
-$("saveReference").addEventListener("click", ()=>{
-  if(!referenceBytes){
-    say("पहले Final Agreement PDF चुनें।");
-    return;
-  }
-  try{
-    localStorage.setItem(
-      "agreementReference",
-      Array.from(referenceBytes).join(",")
-    );
-    say("Reference इस ब्राउज़र में सेव हो गई।");
-  }catch(e){
-    say("Reference सेव नहीं हुई। PDF बड़ी हो सकती है; इस ब्राउज़र की storage सीमा के कारण सेव करना संभव नहीं हुआ।");
-  }
-});
-
-$("draft").addEventListener("change", async e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-
-  try{
-    say("Draft PDF लोड हो रही है...");
-    draftBytes = new Uint8Array(await file.arrayBuffer());
-    pdfDocument = await pdfjsLib.getDocument({
-      data:draftBytes.slice()
-    }).promise;
-
-    $("pageInfo").textContent = "कुल पेज: " + pdfDocument.numPages;
-    await renderPage();
-    say("Draft तैयार है। Seal + Signature या स्टाम्प चुनकर preview में जगह सेट करें।");
-    updateReady();
-  }catch(err){
-    draftBytes = null;
-    pdfDocument = null;
-    updateReady();
-    say("Draft PDF नहीं खुली। वैध PDF चुनें।");
-  }
-});
-
-async function readImage(file, type){
-  if(!file) return;
-
+async function loadImage(file,type){
+  if(!file)return;
   if(!["image/png","image/jpeg"].includes(file.type)){
-    say("कृपया PNG या JPG इमेज चुनें।");
-    return;
+    say("PNG या JPG इमेज चुनें।");return;
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const url = URL.createObjectURL(file);
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const url=URL.createObjectURL(file);
 
-  if(type === "seal"){
-    if(sealUrl) URL.revokeObjectURL(sealUrl);
-    sealBytes = bytes;
-    sealMime = file.type;
-    sealUrl = url;
+  if(type==="company"){
+    if(companyUrl)URL.revokeObjectURL(companyUrl);
+    companyBytes=bytes;companyMime=file.type;companyUrl=url;
   }else{
-    if(stampUrl) URL.revokeObjectURL(stampUrl);
-    stampBytes = bytes;
-    stampMime = file.type;
-    stampUrl = url;
+    if(stampUrl)URL.revokeObjectURL(stampUrl);
+    stampBytes=bytes;stampMime=file.type;stampUrl=url;
   }
-
-  chooseAsset(type);
-  updateReady();
-  say(type === "seal"
-    ? "Company Seal + Signature इमेज लोड हुई।"
-    : "स्टाम्प इमेज लोड हुई।");
+  showOverlay();
 }
 
-$("seal").addEventListener("change", e=>
-  readImage(e.target.files[0],"seal"));
-$("stamp").addEventListener("change", e=>
-  readImage(e.target.files[0],"stamp"));
+$("companyImage").addEventListener("change",e=>
+  loadImage(e.target.files[0],"company"));
+$("stampImage").addEventListener("change",e=>
+  loadImage(e.target.files[0],"stamp"));
 
-$("width").addEventListener("input", e=>{
-  positions.seal.w = Number(e.target.value)/100;
-  $("widthText").textContent = e.target.value + "%";
-  if(activeAsset === "seal") drawOverlay();
-});
-
-$("stampWidth").addEventListener("input", e=>{
-  positions.stamp.w = Number(e.target.value)/100;
-  $("stampWidthText").textContent = e.target.value + "%";
-  if(activeAsset === "stamp") drawOverlay();
-});
-
-overlay.addEventListener("pointerdown", e=>{
-  if(overlay.style.display === "none") return;
-  e.preventDefault();
-  overlay.setPointerCapture(e.pointerId);
-  drag = {
-    x:e.clientX,y:e.clientY,
-    left:positions[activeAsset].x*canvas.clientWidth,
-    top:positions[activeAsset].y*canvas.clientHeight
-  };
-});
-
-overlay.addEventListener("pointermove", e=>{
-  if(!drag) return;
-  e.preventDefault();
-
-  const p = activePosition();
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  const ow = overlay.offsetWidth;
-  const oh = overlay.offsetHeight;
-
-  p.x = Math.max(0,Math.min(1-ow/width,
-    (drag.left+e.clientX-drag.x)/width));
-  p.y = Math.max(0,Math.min(1-oh/height,
-    (drag.top+e.clientY-drag.y)/height));
+$("imageWidth").addEventListener("input",e=>{
+  currentPosition().w=Number(e.target.value)/100;
+  $("widthLabel").textContent=e.target.value+"%";
   drawOverlay();
 });
 
-function stopDrag(){drag=null;}
-overlay.addEventListener("pointerup",stopDrag);
-overlay.addEventListener("pointercancel",stopDrag);
-overlay.addEventListener("lostpointercapture",stopDrag);
-
-$("reset").addEventListener("click",()=>{
-  positions = {
-    seal:{x:.65,y:.78,w:.25},
-    stamp:{x:.65,y:.08,w:.25}
-  };
-  $("width").value = 25;
-  $("widthText").textContent = "25%";
-  $("stampWidth").value = 25;
-  $("stampWidthText").textContent = "25%";
-  drawOverlay();
-  say("Positions reset हो गई हैं।");
+$("overlay").addEventListener("pointerdown",e=>{
+  const canvas=$("pdfCanvas");
+  const p=currentPosition();
+  e.preventDefault();
+  $("overlay").setPointerCapture(e.pointerId);
+  drag={x:e.clientX,y:e.clientY,left:p.x*canvas.clientWidth,
+        top:p.y*canvas.clientHeight};
 });
 
-async function embedImage(pdf, bytes, mime){
-  if(!bytes) return null;
-  return mime === "image/png"
-    ? pdf.embedPng(bytes)
-    : pdf.embedJpg(bytes);
-}
+$("overlay").addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const canvas=$("pdfCanvas"),p=currentPosition();
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  p.x=Math.max(0,Math.min(1-$("overlay").offsetWidth/w,
+    (drag.left+e.clientX-drag.x)/w));
+  p.y=Math.max(0,Math.min(1-$("overlay").offsetHeight/h,
+    (drag.top+e.clientY-drag.y)/h));
+  drawOverlay();
+});
+function endDrag(){drag=null;}
+$("overlay").addEventListener("pointerup",endDrag);
+$("overlay").addEventListener("pointercancel",endDrag);
+$("overlay").addEventListener("lostpointercapture",endDrag);
 
-$("download").addEventListener("click", async ()=>{
-  if(!draftBytes || !pdfDocument) return;
+$("download").addEventListener("click",async()=>{
+  if(!draftBytes)return;
 
-  $("download").disabled = true;
+  const companyPages=[...document.querySelectorAll(
+    'input[data-asset="company"]:checked')].map(x=>Number(x.dataset.page));
+  const stampPages=[...document.querySelectorAll(
+    'input[data-asset="stamp"]:checked')].map(x=>Number(x.dataset.page));
+
+  if(!companyPages.length&&!stampPages.length){
+    say("पहले कम-से-कम एक पेज पर इमेज चुनें।");return;
+  }
 
   try{
-    const pdf = await PDFLib.PDFDocument.load(draftBytes);
-    const seal = await embedImage(pdf,sealBytes,sealMime);
-    const stamp = await embedImage(pdf,stampBytes,stampMime);
-    const pages = pdf.getPages();
+    $("download").disabled=true;
+    say("PDF तैयार हो रही है...");
 
-    for(const page of pages){
-      const {width,height} = page.getSize();
+    const pdf=await PDFLib.PDFDocument.load(draftBytes);
+    const company=companyBytes
+      ?(companyMime==="image/png"?await pdf.embedPng(companyBytes):await pdf.embedJpg(companyBytes))
+      :null;
+    const stamp=stampBytes
+      ?(stampMime==="image/png"?await pdf.embedPng(stampBytes):await pdf.embedJpg(stampBytes))
+      :null;
 
-      for(const item of [
-        {img:stamp,p:positions.stamp},
-        {img:seal,p:positions.seal}
-      ]){
-        if(!item.img) continue;
-        const p = item.p;
-        const w = width*p.w;
-        const h = w*item.img.height/item.img.width;
-        page.drawImage(item.img,{
-          x:p.x*width,
-          y:height-p.y*height-h,
-          width:w,
-          height:h
-        });
-      }
+    const pages=pdf.getPages();
+
+    async function applyTo(pageIndex,image,p){
+      if(!image)return;
+      const page=pages[pageIndex];
+      const {width,height}=page.getSize();
+      const w=width*p.w;
+      const h=w*image.height/image.width;
+
+      page.drawImage(image,{
+        x:p.x*width,
+        y:height-p.y*height-h,
+        width:w,height:h
+      });
     }
 
-    const bytes = await pdf.save();
-    const url = URL.createObjectURL(new Blob([bytes],{
-      type:"application/pdf"
-    }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "Agreement-Prepared.pdf";
-    a.click();
+    for(const i of companyPages)await applyTo(i,company,placements.company);
+    for(const i of stampPages)await applyTo(i,stamp,placements.stamp);
+
+    const bytes=await pdf.save();
+    const url=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+    const a=document.createElement("a");
+    a.href=url;a.download="Agreement-Prepared.pdf";a.click();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
 
-    say("PDF तैयार है। कुल " + pages.length +
-      " पेजों पर चुनी गई इमेज की स्थिति लागू की गई। डाउनलोड के बाद जाँच लें।");
+    say("PDF तैयार है। सभी पेजों को खोलकर इमेज की जगह और दस्तावेज़ की वैधता जाँच लें।");
   }catch(e){
     console.error(e);
-    say("PDF तैयार नहीं हो पाई। कृपया PDF और इमेज जाँचकर दोबारा कोशिश करें।");
+    say("PDF तैयार नहीं हुई। चुनी गई इमेज और PDF जाँचें।");
   }finally{
     updateReady();
   }
 });
 
-window.addEventListener("resize",()=>{
-  if(pdfDocument) renderPage();
-});
+window.addEventListener("resize",()=>{if(draftDoc)renderPreview()});
 </script>
 </body>
 </html>
